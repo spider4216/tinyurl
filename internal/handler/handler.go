@@ -58,5 +58,13 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 
 	url := h.service.GetUrl(id)
 
-	w.Write([]byte(url))
+	if url == "" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Url not found"))
+
+		return
+	}
+
+	w.Header().Set("Location", url)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
