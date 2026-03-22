@@ -42,6 +42,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	full := fmt.Sprintf("http://%s/%s", r.Host, id)
 
+	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(full))
 }
