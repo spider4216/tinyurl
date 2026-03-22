@@ -1,8 +1,8 @@
 package repository
 
-func New() Repository {
+func New(store map[string]string) Repository {
 	return Repository{
-		store: make(map[string]string),
+		store: store,
 	}
 }
 

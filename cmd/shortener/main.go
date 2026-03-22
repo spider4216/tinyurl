@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	repo := repository.New()
+	store := map[string]string{}
+	repo := repository.New(store)
 	service := service.New(repo)
 	handler := handler.New(service)
 
