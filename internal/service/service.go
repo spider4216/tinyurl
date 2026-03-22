@@ -3,18 +3,21 @@ package service
 import (
 	"crypto/rand"
 	"encoding/base64"
-
-	"github.com/spider4216/tinyurl/internal/repository"
 )
 
-func New(repo repository.Repository) Service {
+type Store interface {
+	Insert(k string, v string)
+	Get(k string) string
+}
+
+func New(repo Store) Service {
 	return Service{
 		repo: repo,
 	}
 }
 
 type Service struct {
-	repo repository.Repository
+	repo Store
 }
 
 func (s Service) GenerateId() string {
