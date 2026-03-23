@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -14,12 +15,14 @@ func main() {
 	service := service.New(repo)
 	handler := handler.New(service)
 
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 
-	mux.Handle("/", http.HandlerFunc(handler.GenerateId))
-	mux.Handle("/{id}", http.HandlerFunc(handler.GetUrl))
+	r.Route("/", func(r chi.Router) {
+		r.Post("/", http.HandlerFunc(handler.GenerateId))
+		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
+	})
 
-	err := http.ListenAndServe(":8080", mux)
+	err := http.ListenAndServe(":8080", r)
 
 	if err != nil {
 		panic(err.Error())
