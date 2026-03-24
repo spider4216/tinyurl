@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -15,10 +16,11 @@ import (
 )
 
 func prepateHandler(store map[string]string) Handler {
+	conf := config.New("", "", 0)
 	r := repository.New(store)
 	s := service.New(r)
 
-	return New(s)
+	return New(conf, s)
 }
 
 func TestGenerateId(t *testing.T) {

@@ -5,16 +5,19 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
-func New(service service.Service) Handler {
+func New(conf config.Config, service service.Service) Handler {
 	return Handler{
+		conf:    conf,
 		service: service,
 	}
 }
 
 type Handler struct {
+	conf    config.Config
 	service service.Service
 }
 
@@ -40,7 +43,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	id := h.service.GenerateId()
 	h.service.StoreData(id, string(url))
 
-	full := fmt.Sprintf("http://%s/%s", r.Host, id)
+	full := fmt.Sprintf("%s/%s", h.conf.Domain, id)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
