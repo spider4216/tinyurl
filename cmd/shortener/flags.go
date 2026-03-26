@@ -4,7 +4,10 @@ import (
 	"flag"
 )
 
-const defaultAddress = "http://127.0.0.1:8080"
+const (
+	defaultAddress = "http://127.0.0.1:8080"
+	defaultHost    = "127.0.0.1:8080"
+)
 
 type flags struct {
 	srvHost string
@@ -16,7 +19,7 @@ func InitFlags() flags {
 		domain: defaultAddress,
 	}
 
-	host := flag.String("a", defaultAddress, "Net address host:port")
+	host := flag.String("a", defaultHost, "Net address host:port")
 	baseAddress := flag.String("b", defaultAddress, "Provide base domain with protocol and port")
 	flag.Parse()
 
