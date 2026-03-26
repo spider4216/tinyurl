@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -44,12 +43,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	id := h.service.GenerateId()
 	h.service.StoreData(id, string(url))
 
-	full := fmt.Sprintf("%s:%d/%s", h.conf.Domain, h.conf.ServerPort, id)
-
-	// Игнорировать порт если передан SERVER_PORT
-	if sp := os.Getenv("SERVER_PORT"); sp != "" {
-		full = fmt.Sprintf("%s/%s", h.conf.Domain, id)
-	}
+	full := fmt.Sprintf("%s/%s", h.conf.Domain, id)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)

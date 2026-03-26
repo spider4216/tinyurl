@@ -16,7 +16,7 @@ import (
 )
 
 func prepateHandler(store map[string]string) Handler {
-	conf := config.New("", "", 0)
+	conf := config.New("", "")
 	r := repository.New(store)
 	s := service.New(r)
 

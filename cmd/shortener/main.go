@@ -13,7 +13,7 @@ import (
 func main() {
 	flags := InitFlags()
 
-	conf := config.New(flags.domain, flags.srvHost, flags.srvPort)
+	conf := config.New(flags.domain, flags.srvHost)
 	store := map[string]string{}
 	repo := repository.New(store)
 	service := service.New(repo)
@@ -26,7 +26,7 @@ func main() {
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
 	})
 
-	err := http.ListenAndServe(conf.HostAsString(), r)
+	err := http.ListenAndServe(flags.srvHost, r)
 
 	if err != nil {
 		panic(err.Error())
