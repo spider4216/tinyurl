@@ -46,7 +46,11 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			log.Println("failed to close request body:", err)
+		}
+	}()
 
 	id := h.service.GenerateId()
 	h.service.StoreData(id, string(url))
