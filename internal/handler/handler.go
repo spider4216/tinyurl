@@ -8,6 +8,8 @@ import (
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
+const maxBodySize = 2 * 1024
+
 func New(service service.Service) Handler {
 	return Handler{
 		service: service,
@@ -26,7 +28,9 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := io.ReadAll(r.Body)
+	lr := io.LimitReader(r.Body, maxBodySize)
+
+	url, err := io.ReadAll(lr)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
