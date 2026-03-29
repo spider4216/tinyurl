@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -34,6 +35,7 @@ func main() {
 	err := srv.ListenAndServe()
 
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("Error", err)
+		return
 	}
 }
