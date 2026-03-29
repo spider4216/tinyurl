@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -28,7 +30,20 @@ func main() {
 
 	data.Set("url", long)
 
-	client := &http.Client{}
+	dialer := &net.Dialer{
+		Timeout: 5 * time.Second,
+	}
+
+	trans := &http.Transport{
+		DialContext:           dialer.DialContext,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+	}
+
+	client := &http.Client{
+		Transport: trans,
+		Timeout:   10 * time.Second,
+	}
 
 	req, err := http.NewRequest(http.MethodPost, endpont, strings.NewReader(data.Encode()))
 
