@@ -7,14 +7,14 @@ import (
 	"github.com/spider4216/tinyurl/internal/repository"
 )
 
-func New(repo repository.Repository) Service {
+func New(repo *repository.Repository) Service {
 	return Service{
 		repo: repo,
 	}
 }
 
 type Service struct {
-	repo repository.Repository
+	repo *repository.Repository
 }
 
 func (s Service) GenerateId() string {

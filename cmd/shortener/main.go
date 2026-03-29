@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/config"
@@ -26,9 +28,18 @@ func main() {
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
 	})
 
-	err := http.ListenAndServe(flags.srvHost, r)
+	srv := &http.Server{
+		Addr:         flags.srvHost,
+		Handler:      r,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+
+	err := srv.ListenAndServe()
 
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("Error", err)
+		return
 	}
 }

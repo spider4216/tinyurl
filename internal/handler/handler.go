@@ -3,11 +3,14 @@ package handler
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/service"
 )
+
+const maxBodySize = 2 * 1024
 
 func New(conf config.Config, service service.Service) Handler {
 	return Handler{
@@ -24,21 +27,33 @@ type Handler struct {
 func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method not allowed"))
+
+		if _, err := w.Write([]byte("Method not allowed")); err != nil {
+			log.Println("failed to write response:", err)
+		}
 
 		return
 	}
 
-	url, err := io.ReadAll(r.Body)
+	lr := io.LimitReader(r.Body, maxBodySize)
+
+	url, err := io.ReadAll(lr)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("cannot read body"))
+
+		if _, err := w.Write([]byte("cannot read body")); err != nil {
+			log.Println("failed to write response:", err)
+		}
 
 		return
 	}
 
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			log.Println("failed to close request body:", err)
+		}
+	}()
 
 	id := h.service.GenerateId()
 	h.service.StoreData(id, string(url))
@@ -47,13 +62,18 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(full))
+
+	if _, err := w.Write([]byte(full)); err != nil {
+		log.Println("failed to write response:", err)
+	}
 }
 
 func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method not allowed"))
+		if _, err := w.Write([]byte("Method not allowed")); err != nil {
+			log.Println("failed to write response:", err)
+		}
 
 		return
 	}
@@ -64,7 +84,10 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 
 	if url == "" {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Url not found"))
+
+		if _, err := w.Write([]byte("Url not found")); err != nil {
+			log.Println("failed to write response:", err)
+		}
 
 		return
 	}

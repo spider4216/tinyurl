@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -19,7 +21,8 @@ func main() {
 	long, err := reader.ReadString('\n')
 
 	if err != nil {
-		panic(err)
+		fmt.Println("Error", err)
+		return
 	}
 
 	long = strings.TrimSuffix(long, "\n")
@@ -27,12 +30,26 @@ func main() {
 
 	data.Set("url", long)
 
-	client := &http.Client{}
+	dialer := &net.Dialer{
+		Timeout: 5 * time.Second,
+	}
+
+	trans := &http.Transport{
+		DialContext:           dialer.DialContext,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+	}
+
+	client := &http.Client{
+		Transport: trans,
+		Timeout:   10 * time.Second,
+	}
 
 	req, err := http.NewRequest(http.MethodPost, endpont, strings.NewReader(data.Encode()))
 
 	if err != nil {
-		panic(err)
+		fmt.Println("Error", err)
+		return
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -40,7 +57,8 @@ func main() {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		panic(err)
+		fmt.Println("Error", err)
+		return
 	}
 
 	fmt.Println("Статус-код", resp.Status)
@@ -50,7 +68,8 @@ func main() {
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		panic(err)
+		fmt.Println("Error", err)
+		return
 	}
 
 	fmt.Printf("Response: %s\n", string(body))
