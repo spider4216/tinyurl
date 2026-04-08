@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -72,7 +73,11 @@ func TestGenerateId(t *testing.T) {
 				assert.Equal(t, "plain/text", res.Header.Get("Content-Type"))
 
 				body, err := io.ReadAll(res.Body)
-				defer res.Body.Close()
+				defer func() {
+					if err := res.Body.Close(); err != nil {
+						log.Printf("Error closing: %s", err.Error())
+					}
+				}()
 
 				require.NoError(t, err)
 				assert.NotEmpty(t, body)

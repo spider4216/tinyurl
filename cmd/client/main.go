@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -63,7 +64,11 @@ func main() {
 
 	fmt.Println("Статус-код", resp.Status)
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing body: %s", err.Error())
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 
