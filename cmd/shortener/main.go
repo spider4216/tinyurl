@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -13,13 +14,22 @@ import (
 )
 
 func main() {
-	flags := InitFlags()
+	cfg := config.New()
+	flags := NewFlags()
+	flags.Init()
 
-	conf := config.New(flags.domain, flags.srvHost)
+	if cfg.BaseUrl == "" {
+		cfg.BaseUrl = flags.BaseUrl
+	}
+
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = flags.ServerAddress
+	}
+
 	store := map[string]string{}
 	repo := repository.New(store)
 	service := service.New(repo)
-	handler := handler.New(conf, service)
+	handler := handler.New(cfg, service)
 
 	r := chi.NewRouter()
 
@@ -29,12 +39,14 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:         flags.srvHost,
+		Addr:         cfg.ServerAddress,
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
+
+	log.Printf("Listen on: %s", cfg.ServerAddress)
 
 	err := srv.ListenAndServe()
 

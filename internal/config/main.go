@@ -1,13 +1,15 @@
 package config
 
+import "github.com/caarlos0/env/v11"
+
 type Config struct {
-	ServerHost string
-	Domain     string
+	ServerAddress string `env:"SERVER_ADDRESS"` // Адрес запуска HTTP-сервера
+	BaseUrl       string `env:"BASE_URL"`       // Базовый адрес результирующего сокращённого URL
 }
 
-func New(domain string, srvbHost string) Config {
-	return Config{
-		Domain:     domain,
-		ServerHost: srvbHost,
-	}
+func New() Config {
+	cfg := Config{}
+	env.Parse(&cfg)
+
+	return cfg
 }

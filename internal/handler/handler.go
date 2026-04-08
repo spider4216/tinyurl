@@ -58,7 +58,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	id := h.service.GenerateId()
 	h.service.StoreData(id, string(url))
 
-	full := fmt.Sprintf("%s/%s", h.conf.Domain, id)
+	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
