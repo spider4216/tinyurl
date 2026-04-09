@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/handler"
+	"github.com/spider4216/tinyurl/internal/logger"
+	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 )
@@ -26,14 +28,28 @@ func main() {
 		cfg.ServerAddress = flags.ServerAddress
 	}
 
+	if cfg.LogLvl == "" {
+		cfg.LogLvl = flags.LogLvl
+	}
+
+	logger, err := logger.InitZap(cfg.LogLvl)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	store := map[string]string{}
 	repo := repository.New(store)
 	service := service.New(repo)
 	handler := handler.New(cfg, service)
+	middlewares := middleware.New(logger)
 
 	r := chi.NewRouter()
 
 	r.Route("/", func(r chi.Router) {
+		r.Use(middlewares.WithLogging)
+
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
 	})
@@ -48,10 +64,9 @@ func main() {
 
 	log.Printf("Listen on: %s", cfg.ServerAddress)
 
-	err := srv.ListenAndServe()
-
-	if err != nil {
-		fmt.Println("Error", err)
-		return
+	if err := srv.ListenAndServe(); err != nil {
+		logger.Fatalf("Server error: %s", err)
 	}
+
+	logger.Infof("Starting server on %s", cfg.ServerAddress)
 }
