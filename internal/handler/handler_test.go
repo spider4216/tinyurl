@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/logger"
+	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -20,8 +23,93 @@ func prepateHandler(store map[string]string) Handler {
 	conf := config.New()
 	r := repository.New(store)
 	s := service.New(r)
+	logger, err := logger.InitZap("debug")
 
-	return New(conf, s)
+	if err != nil {
+		panic("Cannot prepare handler")
+	}
+
+	return New(conf, logger, s)
+}
+
+func TestGetShortenUrl(t *testing.T) {
+	type want struct {
+		contentType string
+		status      int
+	}
+
+	cases := []struct {
+		name   string
+		method string
+		urlTo  string
+		urlSrc string
+		want   want
+	}{
+		{
+			name:   "Case #1 Positive",
+			method: http.MethodPost,
+			urlTo:  "/api/shorten",
+			urlSrc: "http://mysite.loc/",
+			want: want{
+				contentType: "application/json",
+				status:      http.StatusCreated,
+			},
+		},
+		{
+			name:   "Case #2 Method Not Allowed",
+			method: http.MethodGet,
+			urlTo:  "/",
+			urlSrc: "http://mysite.loc/",
+			want: want{
+				status: http.StatusMethodNotAllowed,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+
+		req := models.ShortenReq{
+			Url: tc.urlSrc,
+		}
+
+		reqJson, err := json.Marshal(req)
+		assert.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
+		w := httptest.NewRecorder()
+		store := map[string]string{}
+		h := prepateHandler(store)
+
+		h.GetShortenUrl(w, r)
+
+		res := w.Result()
+
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.want.contentType != "" {
+				assert.Equal(t, tc.want.contentType, res.Header.Get("Content-Type"))
+
+				body, err := io.ReadAll(res.Body)
+				defer func() {
+					if err := res.Body.Close(); err != nil {
+						log.Printf("Error closing: %s", err.Error())
+					}
+				}()
+
+				require.NoError(t, err)
+				assert.NotEmpty(t, body)
+
+				resp := models.ShortenResp{}
+
+				err = json.Unmarshal(body, &resp)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, resp.Result)
+			}
+
+			if tc.want.status != 0 {
+				assert.Equal(t, tc.want.status, res.StatusCode)
+			}
+		})
+	}
 }
 
 func TestGenerateId(t *testing.T) {

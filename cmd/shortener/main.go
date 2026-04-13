@@ -42,7 +42,7 @@ func main() {
 	store := map[string]string{}
 	repo := repository.New(store)
 	service := service.New(repo)
-	handler := handler.New(cfg, service)
+	handler := handler.New(cfg, logger, service)
 	middlewares := middleware.New(logger)
 
 	r := chi.NewRouter()
@@ -52,6 +52,7 @@ func main() {
 
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
+		r.Post("/api/shorten", http.HandlerFunc(handler.GetShortenUrl))
 	})
 
 	srv := &http.Server{
