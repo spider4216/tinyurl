@@ -49,6 +49,7 @@ func main() {
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middlewares.WithLogging)
+		r.Use(middlewares.Gzip)
 
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
