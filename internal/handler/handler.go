@@ -153,6 +153,12 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
+		w.WriteHeader(http.StatusNotFound)
+
+		if _, err := w.Write([]byte("Url not found")); err != nil {
+			h.logger.Error("failed to write response", zap.Error(err))
+		}
+
 		return
 	}
 

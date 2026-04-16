@@ -8,7 +8,14 @@ import (
 
 const (
 	FileDriver = "file"
+	MapDriver  = "map"
 )
+
+type record struct {
+	Key         string `json:"uuid"`
+	ShortUrl    string `json:"short_url"`
+	OriginalUrl string `json:"original_url"`
+}
 
 type Storage interface {
 	Save(key string, data []byte) error
@@ -25,7 +32,9 @@ func New(driver string, cfg config.Config) (Storage, error) {
 		}
 
 		return fileStore, nil
-
+	case MapDriver:
+		mapStore := NewMapStorage()
+		return &mapStore, nil
 	}
 
 	return nil, fmt.Errorf("unsupported driver %s", driver)

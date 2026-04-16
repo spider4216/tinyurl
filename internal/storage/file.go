@@ -9,14 +9,6 @@ type FileStorage struct {
 	file *os.File
 }
 
-// В данном случае драйвер описывает формат хранения
-// поскольку есть реализация алгоритма поиска и т.д.
-type record struct {
-	Key         string `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
-}
-
 func NewFileStorage(filename string) (*FileStorage, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
 

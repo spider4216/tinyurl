@@ -38,7 +38,7 @@ func (f *Flags) Init() error {
 	host := flag.String("a", defSrvAddr, "Net address host:port")
 	url := flag.String("b", defBaseUrl, "Provide base domain with protocol and port")
 	logLvl := flag.String("l", defLogLvl, "Log level: debug, info, warning, error, fatal")
-	storeDriver := flag.String("s", defStoreDriver, "Store driver: file")
+	storeDriver := flag.String("s", defStoreDriver, "Store driver: file,map")
 	fileStorePath := flag.String("f", defPath, "File store path")
 
 	flag.Parse()
