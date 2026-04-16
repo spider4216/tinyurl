@@ -222,7 +222,15 @@ func TestGetUrl(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
-			store.Save(tc.id, []byte(tc.urlSrc))
+			m := map[string]string{
+				"original_url": tc.urlSrc,
+				"short_url":    tc.id,
+			}
+
+			b, err := json.Marshal(m)
+			require.NoError(t, err)
+
+			store.Save(tc.id, b)
 		}
 
 		h := prepateHandler(store)

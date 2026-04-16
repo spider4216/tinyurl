@@ -34,7 +34,7 @@ func New(driver string, cfg config.Config) (Storage, error) {
 		return fileStore, nil
 	case MapDriver:
 		mapStore := NewMapStorage()
-		return &mapStore, nil
+		return mapStore, nil
 	}
 
 	return nil, fmt.Errorf("unsupported driver %s", driver)

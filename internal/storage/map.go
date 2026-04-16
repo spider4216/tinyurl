@@ -3,16 +3,14 @@ package storage
 import (
 	"encoding/json"
 	"os"
-	"sync"
 )
 
 type MapStorage struct {
 	store []map[string]string
-	mu    sync.RWMutex
 }
 
-func NewMapStorage() MapStorage {
-	return MapStorage{
+func NewMapStorage() *MapStorage {
+	return &MapStorage{
 		store: []map[string]string{},
 	}
 }
@@ -31,9 +29,6 @@ func (ms *MapStorage) Save(key string, data []byte) error {
 		"short_url":    record.ShortUrl,
 		"original_url": record.OriginalUrl,
 	}
-
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
 
 	ms.store = append(ms.store, raw)
 
