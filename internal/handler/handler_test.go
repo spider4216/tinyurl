@@ -15,11 +15,12 @@ import (
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
+	"github.com/spider4216/tinyurl/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func prepateHandler(store map[string]string) Handler {
+func prepateHandler(store storage.Storage) Handler {
 	conf := config.New()
 	r := repository.New(store)
 	s := service.New(r)
@@ -77,7 +78,9 @@ func TestGetShortenUrl(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
 		w := httptest.NewRecorder()
-		store := map[string]string{}
+		store, err := storage.New(storage.MapDriver)
+		require.NoError(t, err)
+
 		h := prepateHandler(store)
 
 		h.GetShortenUrl(w, r)
@@ -149,7 +152,9 @@ func TestGenerateId(t *testing.T) {
 	for _, tc := range cases {
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer([]byte(tc.urlSrc)))
 		w := httptest.NewRecorder()
-		store := map[string]string{}
+		store, err := storage.New(storage.MapDriver)
+		require.NoError(t, err)
+
 		h := prepateHandler(store)
 
 		h.GenerateId(w, r)
@@ -213,12 +218,11 @@ func TestGetUrl(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		store := map[string]string{}
+		store, err := storage.New(storage.MapDriver)
+		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
-			store = map[string]string{
-				tc.id: tc.urlSrc,
-			}
+			store.Save(tc.id, []byte(tc.urlSrc))
 		}
 
 		h := prepateHandler(store)

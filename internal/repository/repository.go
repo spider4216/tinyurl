@@ -1,34 +1,29 @@
 package repository
 
-import "sync"
+import (
+	"github.com/spider4216/tinyurl/internal/storage"
+)
 
-func New(store map[string]string) *Repository {
+func New(store storage.Storage) *Repository {
 	return &Repository{
 		store: store,
 	}
 }
 
 type Repository struct {
-	store map[string]string
-	mu    sync.RWMutex
+	store storage.Storage
 }
 
-func (r *Repository) Insert(k string, v string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.store[k] = v
+func (r *Repository) Insert(k string, v string) error {
+	return r.store.Save(k, []byte(v))
 }
 
-func (r *Repository) Get(k string) string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *Repository) Get(k string) (string, error) {
+	b, err := r.store.Load(k)
 
-	v, ok := r.store[k]
-
-	if !ok {
-		return ""
+	if err != nil {
+		return "", err
 	}
 
-	return v
+	return string(b), nil
 }

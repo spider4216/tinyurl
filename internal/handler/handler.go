@@ -62,7 +62,11 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := h.service.GenerateId()
-	h.service.StoreData(id, string(req.Url))
+
+	if err = h.service.StoreData(id, string(req.Url)); err != nil {
+		h.logger.Error("store error", zap.Error(err))
+		return
+	}
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
@@ -117,7 +121,11 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	id := h.service.GenerateId()
-	h.service.StoreData(id, string(url))
+
+	if err = h.service.StoreData(id, string(url)); err != nil {
+		h.logger.Error("store error", zap.Error(err))
+		return
+	}
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
@@ -141,7 +149,12 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := r.PathValue("id")
 
-	url := h.service.GetUrl(id)
+	url, err := h.service.GetUrl(id)
+
+	if err != nil {
+		h.logger.Error("get data error", zap.Error(err))
+		return
+	}
 
 	if url == "" {
 		w.WriteHeader(http.StatusNotFound)

@@ -13,6 +13,8 @@ import (
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
+	"github.com/spider4216/tinyurl/internal/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -32,6 +34,10 @@ func main() {
 		cfg.LogLvl = flags.LogLvl
 	}
 
+	if cfg.StoreDriver == "" {
+		cfg.StoreDriver = flags.StoreDriver
+	}
+
 	logger, err := logger.InitZap(cfg.LogLvl)
 
 	if err != nil {
@@ -39,7 +45,14 @@ func main() {
 		return
 	}
 
-	store := map[string]string{}
+	logger.Debug("Config: ", cfg)
+
+	store, err := storage.New(cfg.StoreDriver)
+
+	if err != nil {
+		logger.Fatal("Error while creating store driver", zap.Error(err))
+	}
+
 	repo := repository.New(store)
 	service := service.New(repo)
 	handler := handler.New(cfg, logger, service)

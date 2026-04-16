@@ -24,10 +24,10 @@ func (s Service) GenerateId() string {
 	return base64.URLEncoding.EncodeToString(key)
 }
 
-func (s Service) StoreData(id string, val string) {
-	s.repo.Insert(id, val)
+func (s Service) StoreData(id string, val string) error {
+	return s.repo.Insert(id, val)
 }
 
-func (s Service) GetUrl(k string) string {
+func (s Service) GetUrl(k string) (string, error) {
 	return s.repo.Get(k)
 }
