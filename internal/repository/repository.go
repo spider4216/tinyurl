@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"encoding/json"
+
 	"github.com/spider4216/tinyurl/internal/storage"
 )
 
@@ -14,8 +16,19 @@ type Repository struct {
 	store storage.Storage
 }
 
-func (r *Repository) Insert(k string, v string) error {
-	return r.store.Save(k, []byte(v))
+func (r *Repository) Insert(key string, val string) error {
+	raw := map[string]string{
+		"short_url":    key,
+		"original_url": val,
+	}
+
+	b, err := json.Marshal(raw)
+
+	if err != nil {
+		return err
+	}
+
+	return r.store.Save(key, b)
 }
 
 func (r *Repository) Get(k string) (string, error) {

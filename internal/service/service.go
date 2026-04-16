@@ -3,6 +3,8 @@ package service
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/repository"
 )
@@ -29,5 +31,25 @@ func (s Service) StoreData(id string, val string) error {
 }
 
 func (s Service) GetUrl(k string) (string, error) {
-	return s.repo.Get(k)
+	item, err := s.repo.Get(k)
+
+	if err != nil {
+		return "", err
+	}
+
+	itemMap := map[string]string{}
+
+	err = json.Unmarshal([]byte(item), &itemMap)
+
+	if err != nil {
+		return "", err
+	}
+
+	url, ok := itemMap["original_url"]
+
+	if !ok {
+		return "", fmt.Errorf("cannot get original url from map")
+	}
+
+	return url, nil
 }

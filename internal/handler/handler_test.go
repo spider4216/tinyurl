@@ -78,7 +78,7 @@ func TestGetShortenUrl(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver)
+		store, err := storage.New(storage.MapDriver, config.New())
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -152,7 +152,7 @@ func TestGenerateId(t *testing.T) {
 	for _, tc := range cases {
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer([]byte(tc.urlSrc)))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver)
+		store, err := storage.New(storage.MapDriver, config.New())
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -218,7 +218,7 @@ func TestGetUrl(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		store, err := storage.New(storage.MapDriver)
+		store, err := storage.New(storage.MapDriver, config.New())
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {

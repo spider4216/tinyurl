@@ -20,7 +20,11 @@ import (
 func main() {
 	cfg := config.New()
 	flags := NewFlags()
-	flags.Init()
+
+	if err := flags.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	if cfg.BaseUrl == "" {
 		cfg.BaseUrl = flags.BaseUrl
@@ -38,6 +42,10 @@ func main() {
 		cfg.StoreDriver = flags.StoreDriver
 	}
 
+	if cfg.FileStorePath == "" {
+		cfg.FileStorePath = flags.FileStorePath
+	}
+
 	logger, err := logger.InitZap(cfg.LogLvl)
 
 	if err != nil {
@@ -47,7 +55,7 @@ func main() {
 
 	logger.Debug("Config: ", cfg)
 
-	store, err := storage.New(cfg.StoreDriver)
+	store, err := storage.New(cfg.StoreDriver, cfg)
 
 	if err != nil {
 		logger.Fatal("Error while creating store driver", zap.Error(err))
