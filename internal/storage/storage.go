@@ -22,7 +22,7 @@ type Storage interface {
 	Load(key string) ([]byte, error)
 }
 
-func New(driver string, cfg config.Config) (Storage, error) {
+func New(driver string, cfg *config.Config) (Storage, error) {
 	switch driver {
 	case FileDriver:
 		fileStore, err := NewFileStorage(cfg.FileStorePath)

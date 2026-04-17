@@ -18,7 +18,13 @@ import (
 )
 
 func main() {
-	cfg := config.New()
+	cfg, err := config.New()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	flags := NewFlags()
 
 	if err := flags.Init(); err != nil {

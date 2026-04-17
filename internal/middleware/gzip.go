@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 func (m Middleware) Gzip(h http.Handler) http.Handler {
@@ -24,7 +26,12 @@ func (m Middleware) Gzip(h http.Handler) http.Handler {
 
 			cw := newCompressWriter(w)
 			ow = cw
-			defer cw.Close()
+
+			defer func() {
+				if err := cw.Close(); err != nil {
+					m.logger.Warn("cannot close writer", zap.Error(err))
+				}
+			}()
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -41,7 +48,12 @@ func (m Middleware) Gzip(h http.Handler) http.Handler {
 			}
 
 			r.Body = cr
-			defer cr.Close()
+
+			defer func() {
+				if err := cr.Close(); err != nil {
+					m.logger.Warn("cannot close reader", zap.Error(err))
+				}
+			}()
 		}
 
 		h.ServeHTTP(ow, r)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -44,7 +45,11 @@ func TestGzip(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Log("cannot close body", err)
+			}
+		}()
 
 		b, err := io.ReadAll(resp.Body)
 
@@ -63,7 +68,11 @@ func TestGzip(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Log("cannot close body")
+			}
+		}()
 
 		zr, err := gzip.NewReader(resp.Body)
 		require.NoError(t, err)
@@ -76,5 +85,7 @@ func TestGzip(t *testing.T) {
 }
 
 func fakeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(strings.Repeat("Hello World", 20)))
+	if _, err := w.Write([]byte(strings.Repeat("Hello World", 20))); err != nil {
+		log.Println("cannot write in handler")
+	}
 }

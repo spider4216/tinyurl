@@ -14,7 +14,7 @@ import (
 
 const maxBodySize = 2 * 1024
 
-func New(conf config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
+func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
 		conf:    conf,
 		service: service,
@@ -23,7 +23,7 @@ func New(conf config.Config, logger *zap.SugaredLogger, service service.Service)
 }
 
 type Handler struct {
-	conf    config.Config
+	conf    *config.Config
 	service service.Service
 	logger  *zap.SugaredLogger
 }

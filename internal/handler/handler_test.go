@@ -21,13 +21,18 @@ import (
 )
 
 func prepateHandler(store storage.Storage) Handler {
-	conf := config.New()
+	conf, err := config.New()
+
+	if err != nil {
+		panic("cannot create config")
+	}
+
 	r := repository.New(store)
 	s := service.New(r)
 	logger, err := logger.InitZap("debug")
 
 	if err != nil {
-		panic("Cannot prepare handler")
+		panic("cannot prepare handler")
 	}
 
 	return New(conf, logger, s)
@@ -67,6 +72,9 @@ func TestGetShortenUrl(t *testing.T) {
 		},
 	}
 
+	cfg, err := config.New()
+	require.NoError(t, err)
+
 	for _, tc := range cases {
 
 		req := models.ShortenReq{
@@ -78,7 +86,7 @@ func TestGetShortenUrl(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, config.New())
+		store, err := storage.New(storage.MapDriver, cfg)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -149,10 +157,13 @@ func TestGenerateId(t *testing.T) {
 		},
 	}
 
+	cfg, err := config.New()
+	require.NoError(t, err)
+
 	for _, tc := range cases {
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer([]byte(tc.urlSrc)))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, config.New())
+		store, err := storage.New(storage.MapDriver, cfg)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -217,8 +228,11 @@ func TestGetUrl(t *testing.T) {
 		},
 	}
 
+	cfg, err := config.New()
+	require.NoError(t, err)
+
 	for _, tc := range cases {
-		store, err := storage.New(storage.MapDriver, config.New())
+		store, err := storage.New(storage.MapDriver, cfg)
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
@@ -230,7 +244,8 @@ func TestGetUrl(t *testing.T) {
 			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			store.Save(tc.id, b)
+			err = store.Save(tc.id, b)
+			require.NoError(t, err)
 		}
 
 		h := prepateHandler(store)

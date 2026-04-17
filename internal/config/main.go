@@ -10,9 +10,12 @@ type Config struct {
 	FileStorePath string `env:"FILE_STORAGE_PATH"` // В случае store driver file - путь до файла
 }
 
-func New() Config {
-	cfg := Config{}
-	env.Parse(&cfg)
+func New() (*Config, error) {
+	cfg := &Config{}
 
-	return cfg
+	if err := env.Parse(cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
