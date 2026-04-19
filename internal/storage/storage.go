@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spider4216/tinyurl/internal/config"
 )
@@ -11,15 +12,9 @@ const (
 	MapDriver  = "map"
 )
 
-type record struct {
-	Key         string `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
-}
-
 type Storage interface {
-	Save(key string, data []byte) error
-	Load(key string) ([]byte, error)
+	Save(data []byte) error
+	Load() (io.Reader, error)
 }
 
 func New(driver string, cfg *config.Config) (Storage, error) {

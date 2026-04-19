@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 
 	"github.com/spider4216/tinyurl/internal/storage"
 )
@@ -16,8 +18,15 @@ type Repository struct {
 	store storage.Storage
 }
 
+type record struct {
+	Key         string `json:"uuid"`
+	ShortUrl    string `json:"short_url"`
+	OriginalUrl string `json:"original_url"`
+}
+
 func (r *Repository) Insert(key string, val string) error {
 	raw := map[string]string{
+		"uuid":         key,
 		"short_url":    key,
 		"original_url": val,
 	}
@@ -28,15 +37,31 @@ func (r *Repository) Insert(key string, val string) error {
 		return err
 	}
 
-	return r.store.Save(key, b)
+	return r.store.Save(b)
 }
 
 func (r *Repository) Get(k string) (string, error) {
-	b, err := r.store.Load(k)
+	read, err := r.store.Load()
 
 	if err != nil {
 		return "", err
 	}
 
-	return string(b), nil
+	scanner := bufio.NewScanner(read)
+
+	for scanner.Scan() {
+		item := scanner.Text()
+
+		rec := record{}
+
+		if err := json.Unmarshal([]byte(item), &rec); err != nil {
+			continue
+		}
+
+		if rec.Key == k {
+			return item, nil
+		}
+	}
+
+	return "", errors.New("cannot found item")
 }

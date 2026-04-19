@@ -237,6 +237,7 @@ func TestGetUrl(t *testing.T) {
 
 		if tc.urlSrc != "" {
 			m := map[string]string{
+				"uuid":         tc.id,
 				"original_url": tc.urlSrc,
 				"short_url":    tc.id,
 			}
@@ -244,7 +245,7 @@ func TestGetUrl(t *testing.T) {
 			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			err = store.Save(tc.id, b)
+			err = store.Save(b)
 			require.NoError(t, err)
 		}
 

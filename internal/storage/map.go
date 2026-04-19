@@ -1,58 +1,40 @@
 package storage
 
 import (
-	"encoding/json"
-	"os"
+	"bytes"
+	"io"
+	"sync"
 )
 
 type MapStorage struct {
-	store []map[string]string
+	store []string
+	mu    sync.RWMutex
 }
 
 func NewMapStorage() *MapStorage {
 	return &MapStorage{
-		store: []map[string]string{},
+		store: []string{},
 	}
 }
 
-func (ms *MapStorage) Save(key string, data []byte) error {
-	record := record{}
+func (ms *MapStorage) Save(data []byte) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
 
-	if err := json.Unmarshal(data, &record); err != nil {
-		return err
-	}
-
-	record.Key = key
-
-	raw := map[string]string{
-		"uuid":         key,
-		"short_url":    record.ShortUrl,
-		"original_url": record.OriginalUrl,
-	}
-
-	ms.store = append(ms.store, raw)
+	ms.store = append(ms.store, string(data))
 
 	return nil
 }
 
-func (ms *MapStorage) Load(key string) ([]byte, error) {
-	for _, r := range ms.store {
-		k, ok := r["uuid"]
+func (ms *MapStorage) Load() (io.Reader, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
 
-		if !ok {
-			continue
-		}
+	var buf bytes.Buffer
 
-		if k == key {
-			b, err := json.Marshal(r)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return b, nil
-		}
+	for _, line := range ms.store {
+		buf.WriteString(line)
 	}
 
-	return nil, os.ErrNotExist
+	return &buf, nil
 }

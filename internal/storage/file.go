@@ -1,8 +1,7 @@
 package storage
 
 import (
-	"encoding/json"
-	"log"
+	"io"
 	"os"
 	"sync"
 )
@@ -24,45 +23,27 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	}, nil
 }
 
-func (fs *FileStorage) Save(key string, data []byte) error {
+func (fs *FileStorage) Save(data []byte) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	enc := json.NewEncoder(fs.file)
+	data = append(data, '\n')
 
-	record := record{}
-
-	if err := json.Unmarshal(data, &record); err != nil {
+	if _, err := fs.file.Write(data); err != nil {
 		return err
 	}
 
-	record.Key = key
-
-	return enc.Encode(record)
+	return nil
 }
 
-func (fs *FileStorage) Load(key string) ([]byte, error) {
+func (fs *FileStorage) Load() (io.Reader, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
 	// Вернуть курсор вначало
-	fs.file.Seek(0, 0)
-
-	dec := json.NewDecoder(fs.file)
-
-	for dec.More() {
-		item := record{}
-
-		if err := dec.Decode(&item); err != nil {
-			continue
-		}
-
-		log.Println(item.Key)
-
-		if item.Key == key {
-			return json.Marshal(item)
-		}
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return nil, err
 	}
 
-	return nil, os.ErrNotExist
+	return fs.file, nil
 }
