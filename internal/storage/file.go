@@ -2,15 +2,18 @@ package storage
 
 import (
 	"encoding/json"
+	"log"
 	"os"
+	"sync"
 )
 
 type FileStorage struct {
 	file *os.File
+	mu   sync.RWMutex
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
 	if err != nil {
 		return nil, err
@@ -21,73 +24,43 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	}, nil
 }
 
-// Загружаем содержимое всего файла
-func (fs *FileStorage) loadAll() ([]record, error) {
-	if _, err := fs.file.Seek(0, 0); err != nil {
-		return nil, err
-	}
-
-	var records []record
-
-	stat, _ := fs.file.Stat()
-	if stat.Size() == 0 {
-		return records, nil
-	}
-
-	if err := json.NewDecoder(fs.file).Decode(&records); err != nil {
-		return nil, err
-	}
-
-	return records, nil
-}
-
-// Перезаписываем файл
-func (fs *FileStorage) writeAll(records []record) error {
-	if err := fs.file.Truncate(0); err != nil {
-		return err
-	}
-
-	if _, err := fs.file.Seek(0, 0); err != nil {
-		return err
-	}
-
-	return json.NewEncoder(fs.file).Encode(records)
-}
-
 func (fs *FileStorage) Save(key string, data []byte) error {
-	records, err := fs.loadAll()
-	if err != nil {
-		return err
-	}
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	enc := json.NewEncoder(fs.file)
 
 	record := record{}
 
-	if err = json.Unmarshal(data, &record); err != nil {
+	if err := json.Unmarshal(data, &record); err != nil {
 		return err
 	}
 
 	record.Key = key
 
-	records = append(records, record)
-
-	return fs.writeAll(records)
+	return enc.Encode(record)
 }
 
 func (fs *FileStorage) Load(key string) ([]byte, error) {
-	records, err := fs.loadAll()
-	if err != nil {
-		return nil, err
-	}
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
 
-	for _, r := range records {
-		if r.Key == key {
-			b, err := json.Marshal(r)
+	// Вернуть курсор вначало
+	fs.file.Seek(0, 0)
 
-			if err != nil {
-				return nil, err
-			}
+	dec := json.NewDecoder(fs.file)
 
-			return b, nil
+	for dec.More() {
+		item := record{}
+
+		if err := dec.Decode(&item); err != nil {
+			continue
+		}
+
+		log.Println(item.Key)
+
+		if item.Key == key {
+			return json.Marshal(item)
 		}
 	}
 
