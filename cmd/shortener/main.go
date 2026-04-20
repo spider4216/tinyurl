@@ -2,44 +2,100 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/handler"
+	"github.com/spider4216/tinyurl/internal/logger"
+	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
+	"github.com/spider4216/tinyurl/internal/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
-	flags := InitFlags()
+	cfg, err := config.New()
 
-	conf := config.New(flags.domain, flags.srvHost)
-	store := map[string]string{}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	flags := NewFlags()
+
+	if err := flags.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if cfg.BaseUrl == "" {
+		cfg.BaseUrl = flags.BaseUrl
+	}
+
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = flags.ServerAddress
+	}
+
+	if cfg.LogLvl == "" {
+		cfg.LogLvl = flags.LogLvl
+	}
+
+	if cfg.StoreDriver == "" {
+		cfg.StoreDriver = flags.StoreDriver
+	}
+
+	if cfg.FileStorePath == "" {
+		cfg.FileStorePath = flags.FileStorePath
+	}
+
+	logger, err := logger.InitZap(cfg.LogLvl)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	logger.Debug("Config: ", cfg)
+
+	store, err := storage.New(cfg.StoreDriver, cfg)
+
+	if err != nil {
+		logger.Fatal("Error while creating store driver", zap.Error(err))
+	}
+
 	repo := repository.New(store)
 	service := service.New(repo)
-	handler := handler.New(conf, service)
+	handler := handler.New(cfg, logger, service)
+	middlewares := middleware.New(logger)
 
 	r := chi.NewRouter()
 
 	r.Route("/", func(r chi.Router) {
+		r.Use(middlewares.WithLogging)
+		r.Use(middlewares.Gzip)
+
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
+		r.Post("/api/shorten", http.HandlerFunc(handler.GetShortenUrl))
 	})
 
 	srv := &http.Server{
-		Addr:         flags.srvHost,
+		Addr:         cfg.ServerAddress,
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
 
-	err := srv.ListenAndServe()
+	log.Printf("Listen on: %s", cfg.ServerAddress)
 
-	if err != nil {
-		fmt.Println("Error", err)
-		return
+	if err := srv.ListenAndServe(); err != nil {
+		logger.Fatalf("Server error: %s", err)
 	}
+
+	logger.Infof("Starting server on %s", cfg.ServerAddress)
 }

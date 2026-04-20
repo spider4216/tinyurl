@@ -1,34 +1,67 @@
 package repository
 
-import "sync"
+import (
+	"bufio"
+	"encoding/json"
+	"errors"
 
-func New(store map[string]string) *Repository {
+	"github.com/spider4216/tinyurl/internal/storage"
+)
+
+func New(store storage.Storage) *Repository {
 	return &Repository{
 		store: store,
 	}
 }
 
 type Repository struct {
-	store map[string]string
-	mu    sync.RWMutex
+	store storage.Storage
 }
 
-func (r *Repository) Insert(k string, v string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.store[k] = v
+type record struct {
+	Key         string `json:"uuid"`
+	ShortUrl    string `json:"short_url"`
+	OriginalUrl string `json:"original_url"`
 }
 
-func (r *Repository) Get(k string) string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	v, ok := r.store[k]
-
-	if !ok {
-		return ""
+func (r *Repository) Insert(key string, val string) error {
+	raw := map[string]string{
+		"uuid":         key,
+		"short_url":    key,
+		"original_url": val,
 	}
 
-	return v
+	b, err := json.Marshal(raw)
+
+	if err != nil {
+		return err
+	}
+
+	return r.store.Save(b)
+}
+
+func (r *Repository) Get(k string) (string, error) {
+	read, err := r.store.Load()
+
+	if err != nil {
+		return "", err
+	}
+
+	scanner := bufio.NewScanner(read)
+
+	for scanner.Scan() {
+		item := scanner.Text()
+
+		rec := record{}
+
+		if err := json.Unmarshal([]byte(item), &rec); err != nil {
+			continue
+		}
+
+		if rec.Key == k {
+			return item, nil
+		}
+	}
+
+	return "", errors.New("cannot found item")
 }

@@ -2,34 +2,52 @@ package main
 
 import (
 	"flag"
+	"os"
+
+	"github.com/spider4216/tinyurl/internal/storage"
 )
 
 const (
-	defaultAddress = "http://127.0.0.1:8080"
-	defaultHost    = "127.0.0.1:8080"
+	defSrvAddr     = "127.0.0.1:8080"
+	defBaseUrl     = "http://127.0.0.1:8080"
+	defLogLvl      = "info"
+	defStoreDriver = storage.FileDriver
 )
 
-type flags struct {
-	srvHost string
-	domain  string
+type Flags struct {
+	ServerAddress string
+	BaseUrl       string
+	LogLvl        string
+	StoreDriver   string
+	FileStorePath string
 }
 
-func InitFlags() flags {
-	flags := flags{
-		domain: defaultAddress,
+func NewFlags() Flags {
+	return Flags{}
+}
+
+func (f *Flags) Init() error {
+	defPath, err := os.Getwd()
+
+	if err != nil {
+		return err
 	}
 
-	host := flag.String("a", defaultHost, "Net address host:port")
-	baseAddress := flag.String("b", defaultAddress, "Provide base domain with protocol and port")
+	defPath += "/store.json"
+
+	host := flag.String("a", defSrvAddr, "Net address host:port")
+	url := flag.String("b", defBaseUrl, "Provide base domain with protocol and port")
+	logLvl := flag.String("l", defLogLvl, "Log level: debug, info, warning, error, fatal")
+	storeDriver := flag.String("s", defStoreDriver, "Store driver: file,map")
+	fileStorePath := flag.String("f", defPath, "File store path")
+
 	flag.Parse()
 
-	if host != nil {
-		flags.srvHost = *host
-	}
+	f.ServerAddress = *host
+	f.BaseUrl = *url
+	f.LogLvl = *logLvl
+	f.StoreDriver = *storeDriver
+	f.FileStorePath = *fileStorePath
 
-	if baseAddress != nil {
-		flags.domain = *baseAddress
-	}
-
-	return flags
+	return nil
 }

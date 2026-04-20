@@ -3,6 +3,8 @@ package service
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/repository"
 )
@@ -24,10 +26,30 @@ func (s Service) GenerateId() string {
 	return base64.URLEncoding.EncodeToString(key)
 }
 
-func (s Service) StoreData(id string, val string) {
-	s.repo.Insert(id, val)
+func (s Service) StoreData(id string, val string) error {
+	return s.repo.Insert(id, val)
 }
 
-func (s Service) GetUrl(k string) string {
-	return s.repo.Get(k)
+func (s Service) GetUrl(k string) (string, error) {
+	item, err := s.repo.Get(k)
+
+	if err != nil {
+		return "", err
+	}
+
+	itemMap := map[string]string{}
+
+	err = json.Unmarshal([]byte(item), &itemMap)
+
+	if err != nil {
+		return "", err
+	}
+
+	url, ok := itemMap["original_url"]
+
+	if !ok {
+		return "", fmt.Errorf("cannot get original url from map")
+	}
+
+	return url, nil
 }
