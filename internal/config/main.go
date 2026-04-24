@@ -1,8 +1,12 @@
 package config
 
-import "github.com/caarlos0/env/v11"
+import (
+	"github.com/caarlos0/env/v11"
+	"github.com/spider4216/tinyurl/internal/config/db"
+)
 
 type Config struct {
+	db.DbConfig
 	ServerAddress string `env:"SERVER_ADDRESS"`    // Адрес запуска HTTP-сервера
 	BaseUrl       string `env:"BASE_URL"`          // Базовый адрес результирующего сокращённого URL
 	LogLvl        string `env:"LOG_LEVEL"`         // Уровень логирования

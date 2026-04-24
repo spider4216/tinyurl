@@ -176,3 +176,14 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
+
+func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
+	if err := h.service.Ping(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Error("Cannot ping store", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	h.logger.Info("Ping store OK")
+}

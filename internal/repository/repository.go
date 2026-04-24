@@ -65,3 +65,7 @@ func (r *Repository) Get(k string) (string, error) {
 
 	return "", errors.New("cannot found item")
 }
+
+func (r *Repository) Ping() error {
+	return r.store.Ping()
+}

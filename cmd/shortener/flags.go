@@ -12,6 +12,7 @@ const (
 	defBaseUrl     = "http://127.0.0.1:8080"
 	defLogLvl      = "info"
 	defStoreDriver = storage.FileDriver
+	defDbCon       = "postgres://user:password@localhost:5432/dbname"
 )
 
 type Flags struct {
@@ -20,6 +21,7 @@ type Flags struct {
 	LogLvl        string
 	StoreDriver   string
 	FileStorePath string
+	DbCon         string
 }
 
 func NewFlags() Flags {
@@ -38,8 +40,9 @@ func (f *Flags) Init() error {
 	host := flag.String("a", defSrvAddr, "Net address host:port")
 	url := flag.String("b", defBaseUrl, "Provide base domain with protocol and port")
 	logLvl := flag.String("l", defLogLvl, "Log level: debug, info, warning, error, fatal")
-	storeDriver := flag.String("s", defStoreDriver, "Store driver: file,map")
+	storeDriver := flag.String("s", defStoreDriver, "Store driver: file,map,pgx")
 	fileStorePath := flag.String("f", defPath, "File store path")
+	dbCon := flag.String("d", defDbCon, "DB conection string")
 
 	flag.Parse()
 
@@ -48,6 +51,7 @@ func (f *Flags) Init() error {
 	f.LogLvl = *logLvl
 	f.StoreDriver = *storeDriver
 	f.FileStorePath = *fileStorePath
+	f.DbCon = *dbCon
 
 	return nil
 }

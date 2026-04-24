@@ -8,13 +8,15 @@ import (
 )
 
 const (
-	FileDriver = "file"
-	MapDriver  = "map"
+	FileDriver     = "file"
+	MapDriver      = "map"
+	PostgresDriver = "pgx"
 )
 
 type Storage interface {
 	Save(data []byte) error
 	Load() (io.Reader, error)
+	Ping() error
 }
 
 func New(driver string, cfg *config.Config) (Storage, error) {
@@ -30,6 +32,14 @@ func New(driver string, cfg *config.Config) (Storage, error) {
 	case MapDriver:
 		mapStore := NewMapStorage()
 		return mapStore, nil
+	case PostgresDriver:
+		pgxStore, err := NewPgxStorage(cfg.DbDsn)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return pgxStore, nil
 	}
 
 	return nil, fmt.Errorf("unsupported driver %s", driver)

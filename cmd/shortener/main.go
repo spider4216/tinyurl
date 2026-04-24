@@ -52,6 +52,10 @@ func main() {
 		cfg.FileStorePath = flags.FileStorePath
 	}
 
+	if cfg.DbDsn == "" {
+		cfg.DbDsn = flags.DbCon
+	}
+
 	logger, err := logger.InitZap(cfg.LogLvl)
 
 	if err != nil {
@@ -60,6 +64,10 @@ func main() {
 	}
 
 	logger.Debug("Config: ", cfg)
+
+	if err != nil {
+		logger.Fatal("Error while creating db", zap.Error(err))
+	}
 
 	store, err := storage.New(cfg.StoreDriver, cfg)
 
@@ -81,6 +89,7 @@ func main() {
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
 		r.Post("/api/shorten", http.HandlerFunc(handler.GetShortenUrl))
+		r.Get("/ping", http.HandlerFunc(handler.Ping))
 	})
 
 	srv := &http.Server{

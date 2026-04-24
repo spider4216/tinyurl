@@ -53,3 +53,7 @@ func (s Service) GetUrl(k string) (string, error) {
 
 	return url, nil
 }
+
+func (s Service) Ping() error {
+	return s.repo.Ping()
+}

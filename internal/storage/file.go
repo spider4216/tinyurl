@@ -47,3 +47,7 @@ func (fs *FileStorage) Load() (io.Reader, error) {
 
 	return fs.file, nil
 }
+
+func (fs *FileStorage) Ping() error {
+	return nil
+}

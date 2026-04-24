@@ -38,3 +38,7 @@ func (ms *MapStorage) Load() (io.Reader, error) {
 
 	return &buf, nil
 }
+
+func (ms *MapStorage) Ping() error {
+	return nil
+}
