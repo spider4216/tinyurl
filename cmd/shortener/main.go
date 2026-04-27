@@ -44,16 +44,23 @@ func main() {
 		cfg.LogLvl = flags.LogLvl
 	}
 
-	if cfg.StoreDriver == "" {
-		cfg.StoreDriver = flags.StoreDriver
-	}
-
 	if cfg.FileStorePath == "" {
 		cfg.FileStorePath = flags.FileStorePath
 	}
 
 	if cfg.DbDsn == "" {
 		cfg.DbDsn = flags.DbCon
+	}
+
+	// Если DSN установлен, значит дайвер pgx
+	if cfg.DbDsn != "" {
+		cfg.StoreDriver = storage.PostgresDriver
+	} else if cfg.FileStorePath != "" {
+		// Если DSN не укакзан, следующий приоритет - это файл
+		cfg.StoreDriver = storage.FileDriver
+	} else {
+		// По умолчанию - мап драйвер (память)
+		cfg.StoreDriver = storage.MapDriver
 	}
 
 	logger, err := logger.InitZap(cfg.LogLvl)

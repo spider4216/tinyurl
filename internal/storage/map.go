@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"io"
 	"sync"
 )
 
@@ -17,6 +15,35 @@ func NewMapStorage() *MapStorage {
 	}
 }
 
+type SliceIterator struct {
+	data []string
+	idx  int
+}
+
+func (i *SliceIterator) Next() bool {
+	if i.idx >= len(i.data) {
+		return false
+	}
+
+	i.idx++
+
+	return true
+}
+
+func (i *SliceIterator) Row() ([]byte, error) {
+	v := i.data[i.idx-1]
+
+	return []byte(v), nil
+}
+
+func (i *SliceIterator) Err() error {
+	return nil
+}
+
+func (i *SliceIterator) Close() error {
+	return nil
+}
+
 func (ms *MapStorage) Save(data []byte) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -26,17 +53,14 @@ func (ms *MapStorage) Save(data []byte) error {
 	return nil
 }
 
-func (ms *MapStorage) Load() (io.Reader, error) {
+func (ms *MapStorage) Load() (Iterator, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	var buf bytes.Buffer
-
-	for _, line := range ms.store {
-		buf.WriteString(line)
-	}
-
-	return &buf, nil
+	return &SliceIterator{
+		data: ms.store,
+		idx:  0,
+	}, nil
 }
 
 func (ms *MapStorage) Ping() error {

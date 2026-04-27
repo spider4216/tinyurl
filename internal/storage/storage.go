@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/spider4216/tinyurl/internal/config"
 )
@@ -15,8 +14,15 @@ const (
 
 type Storage interface {
 	Save(data []byte) error
-	Load() (io.Reader, error)
+	Load() (Iterator, error)
 	Ping() error
+}
+
+type Iterator interface {
+	Next() bool
+	Row() ([]byte, error)
+	Err() error
+	Close() error
 }
 
 func New(driver string, cfg *config.Config) (Storage, error) {

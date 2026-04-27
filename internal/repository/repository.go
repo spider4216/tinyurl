@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 
@@ -41,16 +40,18 @@ func (r *Repository) Insert(key string, val string) error {
 }
 
 func (r *Repository) Get(k string) (string, error) {
-	read, err := r.store.Load()
+	rows, err := r.store.Load()
 
 	if err != nil {
 		return "", err
 	}
 
-	scanner := bufio.NewScanner(read)
+	for rows.Next() {
+		item, err := rows.Row()
 
-	for scanner.Scan() {
-		item := scanner.Text()
+		if err != nil {
+			return "", err
+		}
 
 		rec := record{}
 
@@ -59,7 +60,7 @@ func (r *Repository) Get(k string) (string, error) {
 		}
 
 		if rec.Key == k {
-			return item, nil
+			return string(item), nil
 		}
 	}
 

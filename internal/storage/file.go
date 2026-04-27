@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"io"
+	"bufio"
 	"os"
 	"sync"
 )
@@ -23,6 +23,29 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	}, nil
 }
 
+type FileIterator struct {
+	scanner *bufio.Scanner
+	file    *os.File
+}
+
+func (i *FileIterator) Next() bool {
+	return i.scanner.Scan()
+}
+
+func (i *FileIterator) Row() ([]byte, error) {
+	v := i.scanner.Text()
+
+	return []byte(v), nil
+}
+
+func (i *FileIterator) Err() error {
+	return nil
+}
+
+func (i *FileIterator) Close() error {
+	return i.file.Close()
+}
+
 func (fs *FileStorage) Save(data []byte) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -36,7 +59,7 @@ func (fs *FileStorage) Save(data []byte) error {
 	return nil
 }
 
-func (fs *FileStorage) Load() (io.Reader, error) {
+func (fs *FileStorage) Load() (Iterator, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -45,7 +68,10 @@ func (fs *FileStorage) Load() (io.Reader, error) {
 		return nil, err
 	}
 
-	return fs.file, nil
+	return &FileIterator{
+		scanner: bufio.NewScanner(fs.file),
+		file:    fs.file,
+	}, nil
 }
 
 func (fs *FileStorage) Ping() error {
