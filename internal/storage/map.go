@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 )
 
@@ -44,7 +45,7 @@ func (i *SliceIterator) Close() error {
 	return nil
 }
 
-func (ms *MapStorage) Save(data []byte) error {
+func (ms *MapStorage) Save(ctx context.Context, data []byte) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -53,7 +54,7 @@ func (ms *MapStorage) Save(data []byte) error {
 	return nil
 }
 
-func (ms *MapStorage) Load() (Iterator, error) {
+func (ms *MapStorage) Load(ctx context.Context) (Iterator, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -63,7 +64,7 @@ func (ms *MapStorage) Load() (Iterator, error) {
 	}, nil
 }
 
-func (ms *MapStorage) Ping() error {
+func (ms *MapStorage) Ping(ctx context.Context) error {
 	return nil
 }
 

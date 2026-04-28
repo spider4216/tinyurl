@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -26,12 +27,12 @@ func (s Service) GenerateId() string {
 	return base64.URLEncoding.EncodeToString(key)
 }
 
-func (s Service) StoreData(id string, val string) error {
-	return s.repo.Insert(id, val)
+func (s Service) StoreData(ctx context.Context, id string, val string) error {
+	return s.repo.Insert(ctx, id, val)
 }
 
-func (s Service) GetUrl(k string) (string, error) {
-	item, err := s.repo.Get(k)
+func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
+	item, err := s.repo.Get(ctx, k)
 
 	if err != nil {
 		return "", err
@@ -54,6 +55,6 @@ func (s Service) GetUrl(k string) (string, error) {
 	return url, nil
 }
 
-func (s Service) Ping() error {
-	return s.repo.Ping()
+func (s Service) Ping(ctx context.Context) error {
+	return s.repo.Ping(ctx)
 }

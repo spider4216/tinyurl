@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/config"
@@ -13,9 +14,9 @@ const (
 )
 
 type Storage interface {
-	Save(data []byte) error
-	Load() (Iterator, error)
-	Ping() error
+	Save(ctx context.Context, data []byte) error
+	Load(ctx context.Context) (Iterator, error)
+	Ping(ctx context.Context) error
 	Source() any
 	StoreName() string
 }

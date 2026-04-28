@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -23,7 +24,7 @@ type record struct {
 	OriginalUrl string `json:"original_url"`
 }
 
-func (r *Repository) Insert(key string, val string) error {
+func (r *Repository) Insert(ctx context.Context, key string, val string) error {
 	raw := map[string]string{
 		"uuid":         key,
 		"short_url":    key,
@@ -36,11 +37,11 @@ func (r *Repository) Insert(key string, val string) error {
 		return err
 	}
 
-	return r.store.Save(b)
+	return r.store.Save(ctx, b)
 }
 
-func (r *Repository) Get(k string) (string, error) {
-	rows, err := r.store.Load()
+func (r *Repository) Get(ctx context.Context, k string) (string, error) {
+	rows, err := r.store.Load(ctx)
 
 	if err != nil {
 		return "", err
@@ -67,6 +68,6 @@ func (r *Repository) Get(k string) (string, error) {
 	return "", errors.New("cannot found item")
 }
 
-func (r *Repository) Ping() error {
-	return r.store.Ping()
+func (r *Repository) Ping(ctx context.Context) error {
+	return r.store.Ping(ctx)
 }

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"sync"
 )
@@ -46,7 +47,7 @@ func (i *FileIterator) Close() error {
 	return i.file.Close()
 }
 
-func (fs *FileStorage) Save(data []byte) error {
+func (fs *FileStorage) Save(ctx context.Context, data []byte) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -59,7 +60,7 @@ func (fs *FileStorage) Save(data []byte) error {
 	return nil
 }
 
-func (fs *FileStorage) Load() (Iterator, error) {
+func (fs *FileStorage) Load(ctx context.Context) (Iterator, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -74,7 +75,7 @@ func (fs *FileStorage) Load() (Iterator, error) {
 	}, nil
 }
 
-func (fs *FileStorage) Ping() error {
+func (fs *FileStorage) Ping(ctx context.Context) error {
 	return nil
 }
 

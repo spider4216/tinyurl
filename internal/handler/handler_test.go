@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
@@ -231,6 +233,10 @@ func TestGetUrl(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
 	for _, tc := range cases {
 		store, err := storage.New(storage.MapDriver, cfg)
 		require.NoError(t, err)
@@ -245,7 +251,7 @@ func TestGetUrl(t *testing.T) {
 			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			err = store.Save(b)
+			err = store.Save(ctx, b)
 			require.NoError(t, err)
 		}
 

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -70,7 +71,7 @@ func NewPgxStorage(con string) (*PgxStorage, error) {
 	return &PgxStorage{Con: db}, nil
 }
 
-func (db *PgxStorage) Save(data []byte) error {
+func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 	vals := map[string]string{}
 
 	// Приходится делать unmarshal поскольку на уровне store нужно понимать
@@ -93,15 +94,15 @@ func (db *PgxStorage) Save(data []byte) error {
 
 	sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
 
-	_, err := db.Con.Exec(sql, short, origin)
+	_, err := db.Con.ExecContext(ctx, sql, short, origin)
 
 	log.Println("Error here", err)
 
 	return err
 }
 
-func (db *PgxStorage) Load() (Iterator, error) {
-	rows, err := db.Con.Query("SELECT short, original FROM urls")
+func (db *PgxStorage) Load(ctx context.Context) (Iterator, error) {
+	rows, err := db.Con.QueryContext(ctx, "SELECT short, original FROM urls")
 
 	if err != nil {
 		return nil, err
@@ -110,8 +111,8 @@ func (db *PgxStorage) Load() (Iterator, error) {
 	return &PGXIterator{rows: rows}, nil
 }
 
-func (db *PgxStorage) Ping() error {
-	return db.Con.Ping()
+func (db *PgxStorage) Ping(ctx context.Context) error {
+	return db.Con.PingContext(ctx)
 }
 
 func (db *PgxStorage) Source() any {

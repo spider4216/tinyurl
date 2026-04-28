@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
@@ -39,6 +41,10 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
 	lr := io.LimitReader(r.Body, maxBodySize)
 
 	body, err := io.ReadAll(lr)
@@ -63,7 +69,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	if err = h.service.StoreData(id, string(req.Url)); err != nil {
+	if err = h.service.StoreData(ctx, id, string(req.Url)); err != nil {
 		h.logger.Error("store error", zap.Error(err))
 		return
 	}
@@ -100,6 +106,10 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
 	lr := io.LimitReader(r.Body, maxBodySize)
 
 	url, err := io.ReadAll(lr)
@@ -122,7 +132,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	if err = h.service.StoreData(id, string(url)); err != nil {
+	if err = h.service.StoreData(ctx, id, string(url)); err != nil {
 		h.logger.Error("store error", zap.Error(err))
 		return
 	}
@@ -147,9 +157,13 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
 	id := r.PathValue("id")
 
-	url, err := h.service.GetUrl(id)
+	url, err := h.service.GetUrl(ctx, id)
 
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
@@ -178,7 +192,11 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
-	if err := h.service.Ping(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	if err := h.service.Ping(ctx); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.logger.Error("Cannot ping store", zap.Error(err))
 		return
