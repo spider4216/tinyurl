@@ -57,8 +57,7 @@ func (i *PGXIterator) Err() error {
 }
 
 func (i *PGXIterator) Close() error {
-	i.rows.Close()
-	return nil
+	return i.rows.Close()
 }
 
 func NewPgxStorage(con string) (*PgxStorage, error) {
