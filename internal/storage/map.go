@@ -66,3 +66,11 @@ func (ms *MapStorage) Load() (Iterator, error) {
 func (ms *MapStorage) Ping() error {
 	return nil
 }
+
+func (ms *MapStorage) Source() any {
+	return nil
+}
+
+func (ms *MapStorage) StoreName() string {
+	return MapDriver
+}

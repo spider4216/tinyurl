@@ -113,3 +113,11 @@ func (db *PgxStorage) Load() (Iterator, error) {
 func (db *PgxStorage) Ping() error {
 	return db.Con.Ping()
 }
+
+func (db *PgxStorage) Source() any {
+	return db.Con
+}
+
+func (db *PgxStorage) StoreName() string {
+	return PostgresDriver
+}

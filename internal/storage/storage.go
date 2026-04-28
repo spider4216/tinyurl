@@ -16,6 +16,8 @@ type Storage interface {
 	Save(data []byte) error
 	Load() (Iterator, error)
 	Ping() error
+	Source() any
+	StoreName() string
 }
 
 type Iterator interface {

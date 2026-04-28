@@ -77,3 +77,11 @@ func (fs *FileStorage) Load() (Iterator, error) {
 func (fs *FileStorage) Ping() error {
 	return nil
 }
+
+func (fs *FileStorage) Source() any {
+	return nil
+}
+
+func (fs *FileStorage) StoreName() string {
+	return FileDriver
+}

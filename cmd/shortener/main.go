@@ -14,6 +14,7 @@ import (
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/spider4216/tinyurl/internal/storage"
+	"github.com/spider4216/tinyurl/migrations"
 	"go.uber.org/zap"
 )
 
@@ -80,6 +81,17 @@ func main() {
 
 	if err != nil {
 		logger.Fatal("Error while creating store driver", zap.Error(err))
+	}
+
+	// Если драйвер postgres, то придется запускать миграции
+	// из приложения по условиям задания
+	// Подробюнее: migrations.embed.go
+	if store.StoreName() == storage.PostgresDriver {
+		logger.Debug("Up migrations")
+		st := store.(*storage.PgxStorage)
+		if err := migrations.Run(st.Con); err != nil {
+			logger.Fatal("Migration up error", zap.Error(err))
+		}
 	}
 
 	repo := repository.New(store)
