@@ -210,15 +210,32 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	if err = h.service.StoreData(ctx, id, string(url)); err != nil {
+	err = h.service.StoreData(ctx, id, string(url))
+
+	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
 		return
+	}
+
+	status := http.StatusCreated
+
+	// Если дубликат, то тогда извлекаем по значению
+	if err != nil && h.service.IsErrAsDuplicate(err) {
+		h.logger.Debug("Duplicate, try getting exist reccord")
+		status = http.StatusConflict
+
+		id, err = h.service.GetShortByOrigin(ctx, string(url))
+
+		if err != nil {
+			h.logger.Error("store error", zap.Error(err))
+			return
+		}
 	}
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
 	w.Header().Set("Content-Type", "plain/text")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(status)
 
 	if _, err := w.Write([]byte(full)); err != nil {
 		h.logger.Error("failed to write response", zap.Error(err))
