@@ -3,6 +3,7 @@ package storage
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -59,13 +60,18 @@ func (fs *FileStorage) Save(ctx context.Context, data []byte) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	data = append(data, '\n')
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in file save")
+	default:
+		data = append(data, '\n')
 
-	if _, err := fs.file.Write(data); err != nil {
-		return err
+		if _, err := fs.file.Write(data); err != nil {
+			return err
+		}
+
+		return nil
 	}
-
-	return nil
 }
 
 func (fs *FileStorage) Load(ctx context.Context) (Iterator, error) {

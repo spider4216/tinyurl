@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -57,7 +58,12 @@ func (ms *MapStorage) Save(ctx context.Context, data []byte) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	ms.store = append(ms.store, string(data))
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in slice save")
+	default:
+		ms.store = append(ms.store, string(data))
+	}
 
 	return nil
 }
