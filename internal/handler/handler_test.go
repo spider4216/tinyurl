@@ -280,3 +280,100 @@ func TestGetUrl(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUrls(t *testing.T) {
+
+	type urlsSrc struct {
+		CorrelationId string `json:"correlation_id"`
+		OriginalUrl   string `json:"original_url"`
+	}
+
+	type want struct {
+		contentType string
+		status      int
+		ids         []string
+	}
+
+	cases := []struct {
+		name   string
+		method string
+		urlSrc []urlsSrc
+		want   want
+	}{
+		{
+			name:   "Case #1 Positive",
+			method: http.MethodPost,
+			urlSrc: []urlsSrc{
+				{
+					CorrelationId: "abc1",
+					OriginalUrl:   "http://mysite.loc",
+				},
+				{
+					CorrelationId: "abc2",
+					OriginalUrl:   "http://mysite2.loc",
+				},
+			},
+			want: want{
+				contentType: "application/json",
+				status:      http.StatusCreated,
+				ids:         []string{"abc1", "abc2"},
+			},
+		},
+	}
+
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	for _, tc := range cases {
+		body, err := json.Marshal(tc.urlSrc)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
+		w := httptest.NewRecorder()
+		store, err := storage.New(storage.MapDriver, cfg)
+		require.NoError(t, err)
+
+		h := prepateHandler(store)
+
+		h.GetShortenUrls(w, r)
+
+		res := w.Result()
+
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.want.contentType != "" {
+				assert.Equal(t, tc.want.contentType, res.Header.Get("Content-Type"))
+
+				body, err := io.ReadAll(res.Body)
+				defer func() {
+					if err := res.Body.Close(); err != nil {
+						log.Printf("Error closing: %s", err.Error())
+					}
+				}()
+
+				require.NoError(t, err)
+				assert.NotEmpty(t, body)
+
+				items := []map[string]string{}
+				err = json.Unmarshal(body, &items)
+
+				t.Log(items)
+
+				require.NoError(t, err)
+
+				actualIds := []string{}
+
+				for _, item := range items {
+					corId, ok := item["correlation_id"]
+					assert.True(t, ok)
+					actualIds = append(actualIds, corId)
+				}
+
+				assert.Equal(t, tc.want.ids, actualIds)
+			}
+
+			if tc.want.status != 0 {
+				assert.Equal(t, tc.want.status, res.StatusCode)
+			}
+		})
+	}
+}
