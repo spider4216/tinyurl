@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/config"
+	"go.uber.org/zap"
 )
 
 const (
@@ -29,7 +30,7 @@ type Iterator interface {
 	Close() error
 }
 
-func New(driver string, cfg *config.Config) (Storage, error) {
+func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage, error) {
 	switch driver {
 	case FileDriver:
 		fileStore, err := NewFileStorage(cfg.FileStorePath)
@@ -43,7 +44,7 @@ func New(driver string, cfg *config.Config) (Storage, error) {
 		mapStore := NewMapStorage()
 		return mapStore, nil
 	case PostgresDriver:
-		pgxStore, err := NewPgxStorage(cfg.DbDsn)
+		pgxStore, err := NewPgxStorage(cfg.DbDsn, logger)
 
 		if err != nil {
 			return nil, err

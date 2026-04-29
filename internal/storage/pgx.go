@@ -7,12 +7,14 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 )
 
 const Table = "urls"
 
 type PgxStorage struct {
-	Con *sql.DB
+	Con    *sql.DB
+	logger *zap.SugaredLogger
 }
 
 type PGXIterator struct {
@@ -59,14 +61,14 @@ func (i *PGXIterator) Close() error {
 	return i.rows.Close()
 }
 
-func NewPgxStorage(con string) (*PgxStorage, error) {
+func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 	db, err := sql.Open(PostgresDriver, con)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &PgxStorage{Con: db}, nil
+	return &PgxStorage{Con: db, logger: logger}, nil
 }
 
 func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
@@ -75,8 +77,6 @@ func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 	if err != nil {
 		return err
 	}
-
-	defer tx.Rollback()
 
 	for _, item := range data {
 		line := map[string]string{}
@@ -104,7 +104,9 @@ func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 		_, err := tx.ExecContext(ctx, sql, short, origin)
 
 		if err != nil {
-			tx.Rollback()
+			if transErr := tx.Rollback(); transErr != nil {
+				return transErr
+			}
 
 			return err
 		}

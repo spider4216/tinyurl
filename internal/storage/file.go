@@ -50,7 +50,9 @@ func (i *FileIterator) Close() error {
 
 func (fs *FileStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 	for _, item := range data {
-		fs.Save(ctx, item)
+		if err := fs.Save(ctx, item); err != nil {
+			return err
+		}
 	}
 
 	return nil

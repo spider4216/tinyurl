@@ -48,7 +48,9 @@ func (i *SliceIterator) Close() error {
 
 func (ms *MapStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 	for _, item := range data {
-		ms.Save(ctx, item)
+		if err := ms.Save(ctx, item); err != nil {
+			return err
+		}
 	}
 
 	return nil

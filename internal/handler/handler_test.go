@@ -76,6 +76,8 @@ func TestGetShortenUrl(t *testing.T) {
 
 	cfg, err := config.New()
 	require.NoError(t, err)
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
 
 	for _, tc := range cases {
 
@@ -88,7 +90,7 @@ func TestGetShortenUrl(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -162,10 +164,13 @@ func TestGenerateId(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
 	for _, tc := range cases {
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer([]byte(tc.urlSrc)))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -237,8 +242,11 @@ func TestGetUrl(t *testing.T) {
 
 	defer cancel()
 
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
 	for _, tc := range cases {
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
@@ -324,13 +332,16 @@ func TestGetUrls(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
 	for _, tc := range cases {
 		body, err := json.Marshal(tc.urlSrc)
 		require.NoError(t, err)
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)

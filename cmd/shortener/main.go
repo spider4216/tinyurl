@@ -77,7 +77,7 @@ func main() {
 		logger.Fatal("Error while creating db", zap.Error(err))
 	}
 
-	store, err := storage.New(cfg.StoreDriver, cfg)
+	store, err := storage.New(cfg.StoreDriver, cfg, logger)
 
 	if err != nil {
 		logger.Fatal("Error while creating store driver", zap.Error(err))
