@@ -30,6 +30,67 @@ type Handler struct {
 	logger  *zap.SugaredLogger
 }
 
+func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		if _, err := w.Write([]byte("Method not allowed")); err != nil {
+			h.logger.Error("failed to write response", zap.Error(err))
+		}
+
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	lr := io.LimitReader(r.Body, maxBodySize)
+
+	body, err := io.ReadAll(lr)
+
+	if err != nil {
+		h.logger.Error("failed to write response", zap.Error(err))
+		return
+	}
+
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			h.logger.Warn("failed to close request body", zap.Error(err))
+		}
+	}()
+
+	req := []models.ShortenBatchReq{}
+
+	if err := json.Unmarshal(body, &req); err != nil {
+		h.logger.Error("unmarshall error", zap.Error(err))
+		return
+	}
+
+	urls := h.service.MapForMapUrlIds(req)
+
+	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
+		h.logger.Error("unmarshall error", zap.Error(err))
+		return
+	}
+
+	resp := h.MapGenUrlsResp(urls, h.conf.BaseUrl)
+
+	respJson, err := json.Marshal(resp)
+
+	if err != nil {
+		h.logger.Error("cannot marshall", zap.Error(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if _, err := w.Write(respJson); err != nil {
+		h.logger.Fatalln("failed to write response", zap.Error(err))
+	}
+}
+
 func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

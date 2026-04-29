@@ -24,6 +24,28 @@ type record struct {
 	OriginalUrl string `json:"original_url"`
 }
 
+func (r *Repository) InsertBatch(ctx context.Context, keyValues map[string]string) error {
+	raw := [][]byte{}
+
+	for k, v := range keyValues {
+		item := map[string]string{
+			"uuid":         k,
+			"short_url":    k,
+			"original_url": v,
+		}
+
+		b, err := json.Marshal(item)
+
+		if err != nil {
+			return err
+		}
+
+		raw = append(raw, b)
+	}
+
+	return r.store.SaveBatch(ctx, raw)
+}
+
 func (r *Repository) Insert(ctx context.Context, key string, val string) error {
 	raw := map[string]string{
 		"uuid":         key,

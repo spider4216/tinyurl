@@ -45,6 +45,14 @@ func (i *SliceIterator) Close() error {
 	return nil
 }
 
+func (ms *MapStorage) SaveBatch(ctx context.Context, data [][]byte) error {
+	for _, item := range data {
+		ms.Save(ctx, item)
+	}
+
+	return nil
+}
+
 func (ms *MapStorage) Save(ctx context.Context, data []byte) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()

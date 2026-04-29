@@ -47,6 +47,14 @@ func (i *FileIterator) Close() error {
 	return i.file.Close()
 }
 
+func (fs *FileStorage) SaveBatch(ctx context.Context, data [][]byte) error {
+	for _, item := range data {
+		fs.Save(ctx, item)
+	}
+
+	return nil
+}
+
 func (fs *FileStorage) Save(ctx context.Context, data []byte) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

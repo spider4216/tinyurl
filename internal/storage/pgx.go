@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -70,6 +69,50 @@ func NewPgxStorage(con string) (*PgxStorage, error) {
 	return &PgxStorage{Con: db}, nil
 }
 
+func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
+	tx, err := db.Con.Begin()
+
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	for _, item := range data {
+		line := map[string]string{}
+
+		// Приходится делать unmarshal поскольку на уровне store нужно понимать
+		// схему таблицы
+		if err := json.Unmarshal(item, &line); err != nil {
+			return err
+		}
+
+		short, ok := line["short_url"]
+
+		if !ok {
+			return fmt.Errorf("unrecognize columns")
+		}
+
+		origin, ok := line["original_url"]
+
+		if !ok {
+			return fmt.Errorf("unrecognize columns")
+		}
+
+		sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
+
+		_, err := tx.ExecContext(ctx, sql, short, origin)
+
+		if err != nil {
+			tx.Rollback()
+
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 	vals := map[string]string{}
 
@@ -94,8 +137,6 @@ func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 	sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
 
 	_, err := db.Con.ExecContext(ctx, sql, short, origin)
-
-	log.Println("Error here", err)
 
 	return err
 }

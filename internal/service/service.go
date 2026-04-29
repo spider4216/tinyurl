@@ -31,6 +31,16 @@ func (s Service) StoreData(ctx context.Context, id string, val string) error {
 	return s.repo.Insert(ctx, id, val)
 }
 
+func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
+	keyValues := map[string]string{}
+
+	for _, item := range urls {
+		keyValues[item.Short] = item.Origin
+	}
+
+	return s.repo.InsertBatch(ctx, keyValues)
+}
+
 func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	item, err := s.repo.Get(ctx, k)
 

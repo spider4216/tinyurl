@@ -15,6 +15,7 @@ const (
 
 type Storage interface {
 	Save(ctx context.Context, data []byte) error
+	SaveBatch(ctx context.Context, data [][]byte) error
 	Load(ctx context.Context) (Iterator, error)
 	Ping(ctx context.Context) error
 	Source() any
