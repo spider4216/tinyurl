@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spider4216/tinyurl/internal/repository"
 )
 
@@ -65,6 +68,40 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	return url, nil
 }
 
+func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error) {
+	item, err := s.repo.GetByValue(ctx, v)
+
+	if err != nil {
+		return "", err
+	}
+
+	itemMap := map[string]string{}
+
+	err = json.Unmarshal([]byte(item), &itemMap)
+
+	if err != nil {
+		return "", err
+	}
+
+	url, ok := itemMap["short_url"]
+
+	if !ok {
+		return "", fmt.Errorf("cannot get short url from map")
+	}
+
+	return url, nil
+}
+
 func (s Service) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
+}
+
+func (s Service) IsErrAsDuplicate(err error) bool {
+	var pgErr *pgconn.PgError
+
+	if !errors.As(err, &pgErr) {
+		return false
+	}
+
+	return pgErr.Code == pgerrcode.UniqueViolation
 }

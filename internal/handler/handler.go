@@ -130,9 +130,23 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	if err = h.service.StoreData(ctx, id, string(req.Url)); err != nil {
+	err = h.service.StoreData(ctx, id, string(req.Url))
+
+	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
 		return
+	}
+
+	// Если дубликат, то тогда извлекаем по значению
+	if err != nil && h.service.IsErrAsDuplicate(err) {
+		h.logger.Debug("Duplicate, try getting exist reccord")
+
+		id, err = h.service.GetShortByOrigin(ctx, req.Url)
+
+		if err != nil {
+			h.logger.Error("store error", zap.Error(err))
+			return
+		}
 	}
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
