@@ -137,9 +137,12 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	status := http.StatusCreated
+
 	// Если дубликат, то тогда извлекаем по значению
 	if err != nil && h.service.IsErrAsDuplicate(err) {
 		h.logger.Debug("Duplicate, try getting exist reccord")
+		status = http.StatusConflict
 
 		id, err = h.service.GetShortByOrigin(ctx, req.Url)
 
@@ -163,7 +166,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(status)
 
 	if _, err := w.Write(respJson); err != nil {
 		h.logger.Fatalln("failed to write response", zap.Error(err))
