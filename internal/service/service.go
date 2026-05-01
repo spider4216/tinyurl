@@ -46,7 +46,6 @@ func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
 
 func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	item, err := s.repo.Get(ctx, k)
-
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +53,6 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	itemMap := map[string]string{}
 
 	err = json.Unmarshal([]byte(item), &itemMap)
-
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +68,6 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 
 func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error) {
 	item, err := s.repo.GetByValue(ctx, v)
-
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +75,6 @@ func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error)
 	itemMap := map[string]string{}
 
 	err = json.Unmarshal([]byte(item), &itemMap)
-
 	if err != nil {
 		return "", err
 	}

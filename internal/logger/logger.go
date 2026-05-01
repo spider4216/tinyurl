@@ -5,9 +5,7 @@ import (
 )
 
 func InitZap(lvl string) (*zap.SugaredLogger, error) {
-
 	level, err := zap.ParseAtomicLevel(lvl)
-
 	if err != nil {
 		return nil, err
 	}
@@ -16,7 +14,6 @@ func InitZap(lvl string) (*zap.SugaredLogger, error) {
 	cfg.Level = level
 
 	logger, err := cfg.Build()
-
 	if err != nil {
 		return nil, err
 	}

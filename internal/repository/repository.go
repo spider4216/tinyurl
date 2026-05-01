@@ -35,7 +35,6 @@ func (r *Repository) InsertBatch(ctx context.Context, keyValues map[string]strin
 		}
 
 		b, err := json.Marshal(item)
-
 		if err != nil {
 			return err
 		}
@@ -54,7 +53,6 @@ func (r *Repository) Insert(ctx context.Context, key string, val string) error {
 	}
 
 	b, err := json.Marshal(raw)
-
 	if err != nil {
 		return err
 	}
@@ -64,14 +62,12 @@ func (r *Repository) Insert(ctx context.Context, key string, val string) error {
 
 func (r *Repository) Get(ctx context.Context, k string) (string, error) {
 	rows, err := r.store.Load(ctx)
-
 	if err != nil {
 		return "", err
 	}
 
 	for rows.Next() {
 		item, err := rows.Row()
-
 		if err != nil {
 			return "", err
 		}
@@ -92,14 +88,12 @@ func (r *Repository) Get(ctx context.Context, k string) (string, error) {
 
 func (r *Repository) GetByValue(ctx context.Context, v string) (string, error) {
 	rows, err := r.store.Load(ctx)
-
 	if err != nil {
 		return "", err
 	}
 
 	for rows.Next() {
 		item, err := rows.Row()
-
 		if err != nil {
 			return "", err
 		}

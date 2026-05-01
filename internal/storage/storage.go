@@ -34,7 +34,6 @@ func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage,
 	switch driver {
 	case FileDriver:
 		fileStore, err := NewFileStorage(cfg.FileStorePath)
-
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +44,6 @@ func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage,
 		return mapStore, nil
 	case PostgresDriver:
 		pgxStore, err := NewPgxStorage(cfg.DbDsn, logger)
-
 		if err != nil {
 			return nil, err
 		}

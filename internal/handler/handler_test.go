@@ -24,7 +24,6 @@ import (
 
 func prepateHandler(store storage.Storage) Handler {
 	conf, err := config.New()
-
 	if err != nil {
 		panic("cannot create config")
 	}
@@ -32,7 +31,6 @@ func prepateHandler(store storage.Storage) Handler {
 	r := repository.New(store)
 	s := service.New(r)
 	logger, err := logger.InitZap("debug")
-
 	if err != nil {
 		panic("cannot prepare handler")
 	}
@@ -290,7 +288,6 @@ func TestGetUrl(t *testing.T) {
 }
 
 func TestGetUrls(t *testing.T) {
-
 	type urlsSrc struct {
 		CorrelationId string `json:"correlation_id"`
 		OriginalUrl   string `json:"original_url"`

@@ -48,7 +48,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	lr := io.LimitReader(r.Body, maxBodySize)
 
 	body, err := io.ReadAll(lr)
-
 	if err != nil {
 		h.logger.Error("failed to write response", zap.Error(err))
 		return
@@ -77,7 +76,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	resp := h.MapGenUrlsResp(urls, h.conf.BaseUrl)
 
 	respJson, err := json.Marshal(resp)
-
 	if err != nil {
 		h.logger.Error("cannot marshall", zap.Error(err))
 		return
@@ -109,7 +107,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	lr := io.LimitReader(r.Body, maxBodySize)
 
 	body, err := io.ReadAll(lr)
-
 	if err != nil {
 		h.logger.Error("failed to write response", zap.Error(err))
 		return
@@ -145,7 +142,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusConflict
 
 		id, err = h.service.GetShortByOrigin(ctx, req.Url)
-
 		if err != nil {
 			h.logger.Error("store error", zap.Error(err))
 			return
@@ -159,7 +155,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respJson, err := json.Marshal(resp)
-
 	if err != nil {
 		h.logger.Error("cannot marshall", zap.Error(err))
 		return
@@ -191,7 +186,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	lr := io.LimitReader(r.Body, maxBodySize)
 
 	url, err := io.ReadAll(lr)
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -225,7 +219,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusConflict
 
 		id, err = h.service.GetShortByOrigin(ctx, string(url))
-
 		if err != nil {
 			h.logger.Error("store error", zap.Error(err))
 			return
@@ -259,7 +252,6 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	url, err := h.service.GetUrl(ctx, id)
-
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
 		w.WriteHeader(http.StatusNotFound)

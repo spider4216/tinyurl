@@ -20,19 +20,16 @@ var FS embed.FS
 
 func Run(db *sql.DB) error {
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
-
 	if err != nil {
 		return err
 	}
 
 	d, err := iofs.New(FS, ".")
-
 	if err != nil {
 		return err
 	}
 
 	m, err := migrate.NewWithInstance("iofs", d, "postgres", driver)
-
 	if err != nil {
 		return err
 	}

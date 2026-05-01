@@ -26,12 +26,10 @@ func (i *PGXIterator) Next() bool {
 }
 
 func (i *PGXIterator) Row() ([]byte, error) {
-
 	var short string
 	var origin string
 
 	err := i.rows.Scan(&short, &origin)
-
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +43,6 @@ func (i *PGXIterator) Row() ([]byte, error) {
 	}
 
 	b, err := json.Marshal(tmp)
-
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +60,6 @@ func (i *PGXIterator) Close() error {
 
 func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 	db, err := sql.Open(PostgresDriver, con)
-
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +69,6 @@ func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 
 func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 	tx, err := db.Con.Begin()
-
 	if err != nil {
 		return err
 	}
@@ -102,7 +97,6 @@ func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 		sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
 
 		_, err := tx.ExecContext(ctx, sql, short, origin)
-
 		if err != nil {
 			if transErr := tx.Rollback(); transErr != nil {
 				return transErr
@@ -145,7 +139,6 @@ func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 
 func (db *PgxStorage) Load(ctx context.Context) (Iterator, error) {
 	rows, err := db.Con.QueryContext(ctx, "SELECT short, original FROM urls")
-
 	if err != nil {
 		return nil, err
 	}

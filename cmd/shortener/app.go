@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/storage"
@@ -44,7 +46,12 @@ func (app *app) Run() error {
 func (app *app) initMigrations() error {
 	if app.store.StoreName() == storage.PostgresDriver {
 		app.logger.Debug("Up migrations")
-		st := app.store.(*storage.PgxStorage)
+		st, ok := app.store.(*storage.PgxStorage)
+
+		if !ok {
+			return fmt.Errorf("cannot cast to pgx store type in init migration")
+		}
+
 		if err := migrations.Run(st.Con); err != nil {
 			return err
 		}
@@ -55,7 +62,6 @@ func (app *app) initMigrations() error {
 
 func (app *app) initStore() error {
 	store, err := storage.New(app.cfg.StoreDriver, app.cfg, app.logger)
-
 	if err != nil {
 		app.logger.Fatal("Error while creating store driver", zap.Error(err))
 	}
@@ -67,7 +73,6 @@ func (app *app) initStore() error {
 
 func (app *app) initLogger() error {
 	logger, err := logger.InitZap(app.cfg.LogLvl)
-
 	if err != nil {
 		return err
 	}
@@ -79,7 +84,6 @@ func (app *app) initLogger() error {
 
 func (app *app) initConfig() error {
 	cfg, err := config.New()
-
 	if err != nil {
 		return err
 	}

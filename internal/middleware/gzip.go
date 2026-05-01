@@ -41,7 +41,6 @@ func (m Middleware) Gzip(h http.Handler) http.Handler {
 			m.logger.Info("Content in gzip format, will decode")
 
 			cr, err := newCompressReader(r.Body)
-
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -101,7 +100,6 @@ type compressReader struct {
 
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
-
 	if err != nil {
 		return nil, err
 	}
