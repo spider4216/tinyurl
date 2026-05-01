@@ -63,7 +63,7 @@ func (app *app) initMigrations() error {
 func (app *app) initStore() error {
 	store, err := storage.New(app.cfg.StoreDriver, app.cfg, app.logger)
 	if err != nil {
-		app.logger.Fatal("Error while creating store driver", zap.Error(err))
+		return err
 	}
 
 	app.store = store

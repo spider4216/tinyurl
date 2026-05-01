@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
@@ -41,7 +40,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -52,12 +51,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("failed to write response", zap.Error(err))
 		return
 	}
-
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			h.logger.Warn("failed to close request body", zap.Error(err))
-		}
-	}()
 
 	req := []models.ShortenBatchReq{}
 
@@ -100,7 +93,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -111,12 +104,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("failed to write response", zap.Error(err))
 		return
 	}
-
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			h.logger.Warn("failed to close request body", zap.Error(err))
-		}
-	}()
 
 	req := models.ShortenReq{}
 
@@ -179,7 +166,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -195,12 +182,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			h.logger.Error("failed to close request body", zap.Error(err))
-		}
-	}()
 
 	id := h.service.GenerateId()
 
@@ -245,7 +226,7 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -279,7 +260,7 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
 

@@ -1,2 +1,0 @@
-ALTER TABLE urls 
-DROP CONSTRAINT IF EXISTS origin_unique_idx;
