@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -24,7 +24,28 @@ type record struct {
 	OriginalUrl string `json:"original_url"`
 }
 
-func (r *Repository) Insert(key string, val string) error {
+func (r *Repository) InsertBatch(ctx context.Context, keyValues map[string]string) error {
+	raw := [][]byte{}
+
+	for k, v := range keyValues {
+		item := map[string]string{
+			"uuid":         k,
+			"short_url":    k,
+			"original_url": v,
+		}
+
+		b, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+
+		raw = append(raw, b)
+	}
+
+	return r.store.SaveBatch(ctx, raw)
+}
+
+func (r *Repository) Insert(ctx context.Context, key string, val string) error {
 	raw := map[string]string{
 		"uuid":         key,
 		"short_url":    key,
@@ -32,25 +53,24 @@ func (r *Repository) Insert(key string, val string) error {
 	}
 
 	b, err := json.Marshal(raw)
-
 	if err != nil {
 		return err
 	}
 
-	return r.store.Save(b)
+	return r.store.Save(ctx, b)
 }
 
-func (r *Repository) Get(k string) (string, error) {
-	read, err := r.store.Load()
-
+func (r *Repository) Get(ctx context.Context, k string) (string, error) {
+	rows, err := r.store.Load(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	scanner := bufio.NewScanner(read)
-
-	for scanner.Scan() {
-		item := scanner.Text()
+	for rows.Next() {
+		item, err := rows.Row()
+		if err != nil {
+			return "", err
+		}
 
 		rec := record{}
 
@@ -59,9 +79,39 @@ func (r *Repository) Get(k string) (string, error) {
 		}
 
 		if rec.Key == k {
-			return item, nil
+			return string(item), nil
 		}
 	}
 
 	return "", errors.New("cannot found item")
+}
+
+func (r *Repository) GetByValue(ctx context.Context, v string) (string, error) {
+	rows, err := r.store.Load(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	for rows.Next() {
+		item, err := rows.Row()
+		if err != nil {
+			return "", err
+		}
+
+		rec := record{}
+
+		if err := json.Unmarshal([]byte(item), &rec); err != nil {
+			continue
+		}
+
+		if rec.OriginalUrl == v {
+			return string(item), nil
+		}
+	}
+
+	return "", errors.New("cannot found item")
+}
+
+func (r *Repository) Ping(ctx context.Context) error {
+	return r.store.Ping(ctx)
 }

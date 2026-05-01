@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
@@ -22,7 +24,6 @@ import (
 
 func prepateHandler(store storage.Storage) Handler {
 	conf, err := config.New()
-
 	if err != nil {
 		panic("cannot create config")
 	}
@@ -30,7 +31,6 @@ func prepateHandler(store storage.Storage) Handler {
 	r := repository.New(store)
 	s := service.New(r)
 	logger, err := logger.InitZap("debug")
-
 	if err != nil {
 		panic("cannot prepare handler")
 	}
@@ -74,6 +74,8 @@ func TestGetShortenUrl(t *testing.T) {
 
 	cfg, err := config.New()
 	require.NoError(t, err)
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
 
 	for _, tc := range cases {
 
@@ -86,7 +88,7 @@ func TestGetShortenUrl(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer(reqJson))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -160,10 +162,13 @@ func TestGenerateId(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
 	for _, tc := range cases {
 		r := httptest.NewRequest(tc.method, tc.urlTo, bytes.NewBuffer([]byte(tc.urlSrc)))
 		w := httptest.NewRecorder()
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
@@ -231,8 +236,15 @@ func TestGetUrl(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
 	for _, tc := range cases {
-		store, err := storage.New(storage.MapDriver, cfg)
+		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
@@ -245,7 +257,7 @@ func TestGetUrl(t *testing.T) {
 			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			err = store.Save(b)
+			err = store.Save(ctx, b)
 			require.NoError(t, err)
 		}
 
@@ -271,6 +283,105 @@ func TestGetUrl(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.want.status, respGet.StatusCode)
+		})
+	}
+}
+
+func TestGetUrls(t *testing.T) {
+	type urlsSrc struct {
+		CorrelationId string `json:"correlation_id"`
+		OriginalUrl   string `json:"original_url"`
+	}
+
+	type want struct {
+		contentType string
+		status      int
+		ids         []string
+	}
+
+	cases := []struct {
+		name   string
+		method string
+		urlSrc []urlsSrc
+		want   want
+	}{
+		{
+			name:   "Case #1 Positive",
+			method: http.MethodPost,
+			urlSrc: []urlsSrc{
+				{
+					CorrelationId: "abc1",
+					OriginalUrl:   "http://mysite.loc",
+				},
+				{
+					CorrelationId: "abc2",
+					OriginalUrl:   "http://mysite2.loc",
+				},
+			},
+			want: want{
+				contentType: "application/json",
+				status:      http.StatusCreated,
+				ids:         []string{"abc1", "abc2"},
+			},
+		},
+	}
+
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
+	for _, tc := range cases {
+		body, err := json.Marshal(tc.urlSrc)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
+		w := httptest.NewRecorder()
+		store, err := storage.New(storage.MapDriver, cfg, logger)
+		require.NoError(t, err)
+
+		h := prepateHandler(store)
+
+		h.GetShortenUrls(w, r)
+
+		res := w.Result()
+
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.want.contentType != "" {
+				assert.Equal(t, tc.want.contentType, res.Header.Get("Content-Type"))
+
+				body, err := io.ReadAll(res.Body)
+				defer func() {
+					if err := res.Body.Close(); err != nil {
+						log.Printf("Error closing: %s", err.Error())
+					}
+				}()
+
+				require.NoError(t, err)
+				assert.NotEmpty(t, body)
+
+				items := []map[string]string{}
+				err = json.Unmarshal(body, &items)
+
+				t.Log(items)
+
+				require.NoError(t, err)
+
+				actualIds := []string{}
+
+				for _, item := range items {
+					corId, ok := item["correlation_id"]
+					assert.True(t, ok)
+					actualIds = append(actualIds, corId)
+				}
+
+				assert.Equal(t, tc.want.ids, actualIds)
+			}
+
+			if tc.want.status != 0 {
+				assert.Equal(t, tc.want.status, res.StatusCode)
+			}
 		})
 	}
 }

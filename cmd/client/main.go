@@ -20,7 +20,6 @@ func main() {
 	fmt.Println("Введите длинный URL")
 	reader := bufio.NewReader(os.Stdin)
 	long, err := reader.ReadString('\n')
-
 	if err != nil {
 		fmt.Println("Error", err)
 		return
@@ -47,7 +46,6 @@ func main() {
 	}
 
 	req, err := http.NewRequest(http.MethodPost, endpont, strings.NewReader(data.Encode()))
-
 	if err != nil {
 		fmt.Println("Error", err)
 		return
@@ -56,7 +54,6 @@ func main() {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		fmt.Println("Error", err)
 		return
@@ -71,12 +68,10 @@ func main() {
 	}()
 
 	body, err := io.ReadAll(resp.Body)
-
 	if err != nil {
 		fmt.Println("Error", err)
 		return
 	}
 
 	fmt.Printf("Response: %s\n", string(body))
-
 }

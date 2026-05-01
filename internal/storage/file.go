@@ -1,7 +1,9 @@
 package storage
 
 import (
-	"io"
+	"bufio"
+	"context"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -12,8 +14,7 @@ type FileStorage struct {
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		return nil, err
 	}
@@ -23,20 +24,58 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	}, nil
 }
 
-func (fs *FileStorage) Save(data []byte) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
+type FileIterator struct {
+	scanner *bufio.Scanner
+	file    *os.File
+}
 
-	data = append(data, '\n')
+func (i *FileIterator) Next() bool {
+	return i.scanner.Scan()
+}
 
-	if _, err := fs.file.Write(data); err != nil {
-		return err
+func (i *FileIterator) Row() ([]byte, error) {
+	v := i.scanner.Text()
+
+	return []byte(v), nil
+}
+
+func (i *FileIterator) Err() error {
+	return nil
+}
+
+func (i *FileIterator) Close() error {
+	return i.file.Close()
+}
+
+func (fs *FileStorage) SaveBatch(ctx context.Context, data [][]byte) error {
+	for _, item := range data {
+		if err := fs.Save(ctx, item); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (fs *FileStorage) Load() (io.Reader, error) {
+func (fs *FileStorage) Save(ctx context.Context, data []byte) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in file save")
+	default:
+		data = append(data, '\n')
+
+		if _, err := fs.file.Write(data); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func (fs *FileStorage) Load(ctx context.Context) (Iterator, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -45,5 +84,20 @@ func (fs *FileStorage) Load() (io.Reader, error) {
 		return nil, err
 	}
 
-	return fs.file, nil
+	return &FileIterator{
+		scanner: bufio.NewScanner(fs.file),
+		file:    fs.file,
+	}, nil
+}
+
+func (fs *FileStorage) Ping(ctx context.Context) error {
+	return nil
+}
+
+func (fs *FileStorage) Source() any {
+	return nil
+}
+
+func (fs *FileStorage) StoreName() string {
+	return FileDriver
 }

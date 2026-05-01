@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"bytes"
-	"io"
+	"context"
+	"fmt"
 	"sync"
 )
 
@@ -17,24 +17,77 @@ func NewMapStorage() *MapStorage {
 	}
 }
 
-func (ms *MapStorage) Save(data []byte) error {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
+type SliceIterator struct {
+	data []string
+	idx  int
+}
 
-	ms.store = append(ms.store, string(data))
+func (i *SliceIterator) Next() bool {
+	if i.idx >= len(i.data) {
+		return false
+	}
+
+	i.idx++
+
+	return true
+}
+
+func (i *SliceIterator) Row() ([]byte, error) {
+	v := i.data[i.idx-1]
+
+	return []byte(v), nil
+}
+
+func (i *SliceIterator) Err() error {
+	return nil
+}
+
+func (i *SliceIterator) Close() error {
+	return nil
+}
+
+func (ms *MapStorage) SaveBatch(ctx context.Context, data [][]byte) error {
+	for _, item := range data {
+		if err := ms.Save(ctx, item); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (ms *MapStorage) Load() (io.Reader, error) {
+func (ms *MapStorage) Save(ctx context.Context, data []byte) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	var buf bytes.Buffer
-
-	for _, line := range ms.store {
-		buf.WriteString(line)
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in slice save")
+	default:
+		ms.store = append(ms.store, string(data))
 	}
 
-	return &buf, nil
+	return nil
+}
+
+func (ms *MapStorage) Load(ctx context.Context) (Iterator, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	return &SliceIterator{
+		data: ms.store,
+		idx:  0,
+	}, nil
+}
+
+func (ms *MapStorage) Ping(ctx context.Context) error {
+	return nil
+}
+
+func (ms *MapStorage) Source() any {
+	return nil
+}
+
+func (ms *MapStorage) StoreName() string {
+	return MapDriver
 }
