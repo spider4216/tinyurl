@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const maxBodySize = 2 * 1024
-
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
 		conf:    conf,
@@ -44,7 +42,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(lr)
 	if err != nil {
@@ -97,7 +95,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(lr)
 	if err != nil {
@@ -170,7 +168,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
 
 	url, err := io.ReadAll(lr)
 	if err != nil {

@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/handler"
@@ -42,9 +41,9 @@ func main() {
 	srv := &http.Server{
 		Addr:         app.cfg.ServerAddress,
 		Handler:      r,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  app.cfg.ReadTimeout,
+		WriteTimeout: app.cfg.WriteTimeout,
+		IdleTimeout:  app.cfg.IdleTimeout,
 	}
 
 	log.Printf("Listen on: %s", app.cfg.ServerAddress)
