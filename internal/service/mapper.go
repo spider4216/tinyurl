@@ -6,9 +6,10 @@ type UrlsIds struct {
 	Short  string
 	Origin string
 	CorId  string
+	UserId string
 }
 
-func (s Service) MapForMapUrlIds(m []models.ShortenBatchReq) []UrlsIds {
+func (s Service) MapForMapUrlIds(m []models.ShortenBatchReq, userId string) []UrlsIds {
 	var urls []UrlsIds
 
 	for _, item := range m {
@@ -16,6 +17,7 @@ func (s Service) MapForMapUrlIds(m []models.ShortenBatchReq) []UrlsIds {
 			Short:  s.GenerateId(),
 			Origin: item.OriginalUrl,
 			CorId:  item.CorrelationId,
+			UserId: userId,
 		}
 
 		urls = append(urls, u)

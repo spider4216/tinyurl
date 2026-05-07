@@ -94,9 +94,15 @@ func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
 			return fmt.Errorf("unrecognize columns")
 		}
 
-		sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
+		userId, ok := line["user_id"]
 
-		_, err := tx.ExecContext(ctx, sql, short, origin)
+		if !ok {
+			return fmt.Errorf("unrecognize columns")
+		}
+
+		sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+		_, err := tx.ExecContext(ctx, sql, short, origin, userId)
 		if err != nil {
 			if transErr := tx.Rollback(); transErr != nil {
 				return transErr
@@ -130,9 +136,15 @@ func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 		return fmt.Errorf("unrecognize columns")
 	}
 
-	sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
+	userId, ok := vals["user_id"]
 
-	_, err := db.Con.ExecContext(ctx, sql, short, origin)
+	if !ok {
+		return fmt.Errorf("unrecognize columns")
+	}
+
+	sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+	_, err := db.Con.ExecContext(ctx, sql, short, origin, userId)
 
 	return err
 }

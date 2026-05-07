@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 )
 
@@ -30,18 +31,26 @@ func (s Service) GenerateId() string {
 	return base64.URLEncoding.EncodeToString(key)
 }
 
-func (s Service) StoreData(ctx context.Context, id string, val string) error {
-	return s.repo.Insert(ctx, id, val)
+func (s Service) StoreData(ctx context.Context, id string, val string, userId string) error {
+	in := s.repo.MapInserData(id, val, userId)
+
+	return s.repo.Insert(ctx, in)
 }
 
 func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
-	keyValues := map[string]string{}
+	in := []models.InsertData{}
 
 	for _, item := range urls {
-		keyValues[item.Short] = item.Origin
+		i := models.InsertData{
+			Key:    item.Short,
+			Value:  item.Origin,
+			UserId: item.UserId,
+		}
+
+		in = append(in, i)
 	}
 
-	return s.repo.InsertBatch(ctx, keyValues)
+	return s.repo.InsertBatch(ctx, in)
 }
 
 func (s Service) GetUrl(ctx context.Context, k string) (string, error) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/storage"
 )
 
@@ -24,17 +25,18 @@ type record struct {
 	OriginalUrl string `json:"original_url"`
 }
 
-func (r *Repository) InsertBatch(ctx context.Context, keyValues map[string]string) error {
+func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData) error {
 	raw := [][]byte{}
 
-	for k, v := range keyValues {
-		item := map[string]string{
-			"uuid":         k,
-			"short_url":    k,
-			"original_url": v,
+	for _, item := range items {
+		i := map[string]string{
+			"uuid":         item.Key,
+			"short_url":    item.Key,
+			"original_url": item.Value,
+			"user_id":      item.UserId,
 		}
 
-		b, err := json.Marshal(item)
+		b, err := json.Marshal(i)
 		if err != nil {
 			return err
 		}
@@ -45,11 +47,12 @@ func (r *Repository) InsertBatch(ctx context.Context, keyValues map[string]strin
 	return r.store.SaveBatch(ctx, raw)
 }
 
-func (r *Repository) Insert(ctx context.Context, key string, val string) error {
+func (r *Repository) Insert(ctx context.Context, data models.InsertData) error {
 	raw := map[string]string{
-		"uuid":         key,
-		"short_url":    key,
-		"original_url": val,
+		"uuid":         data.Key,
+		"short_url":    data.Key,
+		"original_url": data.Value,
+		"user_id":      data.UserId,
 	}
 
 	b, err := json.Marshal(raw)

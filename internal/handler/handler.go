@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -57,7 +59,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urls := h.service.MapForMapUrlIds(req)
+	urls := h.service.MapForMapUrlIds(req, "")
 
 	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
 		h.logger.Error("unmarshall error", zap.Error(err))
@@ -112,7 +114,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	err = h.service.StoreData(ctx, id, string(req.Url))
+	err = h.service.StoreData(ctx, id, string(req.Url), "")
 
 	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
@@ -164,6 +166,27 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authCookie, err := r.Cookie("user_id")
+	needSetCookie := false
+	userId := ""
+
+	if err != nil {
+		// Если ошибка и она не связана с ErrNoCookie, то останавливаемся
+		if err != http.ErrNoCookie {
+			h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Если куки просто нет, то генерируем новый User ID
+		userId = uuid.NewString()
+		// Перед позитивным ответом, нужно установить новую куку
+		needSetCookie = true
+	} else {
+		// Кука существует, извлекаем из нее ID пользователя
+		userId = authCookie.Value
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
 	defer cancel()
@@ -183,7 +206,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	err = h.service.StoreData(ctx, id, string(url))
+	err = h.service.StoreData(ctx, id, string(url), userId)
 
 	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
@@ -207,6 +230,21 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
 	w.Header().Set("Content-Type", "plain/text")
+
+	if needSetCookie {
+		cookie := http.Cookie{
+			Name:     "user_id",
+			Value:    userId,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour), // Expires in 24 hours
+			HttpOnly: true,                           // Protects against XSS
+			Secure:   true,                           // Only sent over HTTPS
+			SameSite: http.SameSiteLaxMode,           // CSRF protection
+		}
+
+		http.SetCookie(w, &cookie)
+	}
+
 	w.WriteHeader(status)
 
 	if _, err := w.Write([]byte(full)); err != nil {
