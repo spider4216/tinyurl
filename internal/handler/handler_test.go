@@ -78,7 +78,6 @@ func TestGetShortenUrl(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-
 		req := models.ShortenReq{
 			Url: tc.urlSrc,
 		}
