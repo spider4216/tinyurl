@@ -100,6 +100,16 @@ func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error)
 	return url, nil
 }
 
+func (s Service) GetUrlsByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	items, err := s.repo.GetByUserId(ctx, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
 func (s Service) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }

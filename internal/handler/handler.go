@@ -440,6 +440,69 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+
+	defer cancel()
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if _, err := w.Write([]byte("Method not allowed")); err != nil {
+			h.logger.Error("failed to write response", zap.Error(err))
+		}
+
+		return
+	}
+
+	userId, needSetCookie, sign, err := h.authCookie(r)
+
+	if err != nil {
+		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Если кука пришла, то нужно ее провалидировать
+	if !needSetCookie {
+		h.logger.Debug("Validate user...")
+
+		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
+			h.logger.Error("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+
+	urls, err := h.service.GetUrlsByUserId(ctx, userId)
+
+	if err != nil {
+		h.logger.Error("get data error", zap.Error(err))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if len(urls) <= 0 {
+		h.logger.Debug("No items for user", userId)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	d, err := json.Marshal(urls)
+
+	if err != nil {
+		h.logger.Error("marshal response error", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if _, err := w.Write(d); err != nil {
+		h.logger.Fatalln("failed to write response", zap.Error(err))
+	}
+}
+
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 

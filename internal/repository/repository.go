@@ -23,6 +23,7 @@ type record struct {
 	Key         string `json:"uuid"`
 	ShortUrl    string `json:"short_url"`
 	OriginalUrl string `json:"original_url"`
+	UserId      string `json:"user_id"`
 }
 
 func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData) error {
@@ -117,4 +118,36 @@ func (r *Repository) GetByValue(ctx context.Context, v string) (string, error) {
 
 func (r *Repository) Ping(ctx context.Context) error {
 	return r.store.Ping(ctx)
+}
+
+func (r *Repository) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	rows, err := r.store.Load(ctx)
+
+	var urls []models.UrlItem
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		item, err := rows.Row()
+		if err != nil {
+			return nil, err
+		}
+
+		rec := record{}
+
+		if err := json.Unmarshal([]byte(item), &rec); err != nil {
+			continue
+		}
+
+		if rec.UserId == userId {
+			urls = append(urls, models.UrlItem{
+				OriginarUrl: rec.OriginalUrl,
+				ShortUrl:    rec.ShortUrl,
+			})
+		}
+	}
+
+	return urls, nil
 }
