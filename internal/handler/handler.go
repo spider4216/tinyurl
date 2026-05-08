@@ -75,14 +75,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 			// По требованию если токен не валидный, устанавливаем новый
 			// Делаем новый userId
 			userId = uuid.NewString()
-			// Подписываем
-			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-			if err != nil {
-				h.logger.Error("cannot sign", zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 			// Устанавливаем новую куку
 			needSetCookie = true
 		}
@@ -172,14 +164,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 			// По требованию если токен не валидный, устанавливаем новый
 			// Делаем новый userId
 			userId = uuid.NewString()
-			// Подписываем
-			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-			if err != nil {
-				h.logger.Error("cannot sign", zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 			// Устанавливаем новую куку
 			needSetCookie = true
 		}
@@ -266,14 +250,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 			// По требованию если токен не валидный, устанавливаем новый
 			// Делаем новый userId
 			userId = uuid.NewString()
-			// Подписываем
-			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-			if err != nil {
-				h.logger.Error("cannot sign", zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 			// Устанавливаем новую куку
 			needSetCookie = true
 		}
@@ -368,14 +344,6 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 			// По требованию если токен не валидный, устанавливаем новый
 			// Делаем новый userId
 			userId = uuid.NewString()
-			// Подписываем
-			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-			if err != nil {
-				h.logger.Error("cannot sign", zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 			// Устанавливаем новую куку
 			needSetCookie = true
 		}
