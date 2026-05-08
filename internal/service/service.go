@@ -100,10 +100,14 @@ func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error)
 	return url, nil
 }
 
-func (s Service) GetUrlsByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+func (s Service) GetUrlsByUserId(ctx context.Context, userId string, baseUrl string) ([]models.UrlItem, error) {
 	items, err := s.repo.GetByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
+	}
+
+	for i := range items {
+		items[i].ShortUrl = fmt.Sprintf("%s/%s", baseUrl, items[i].ShortUrl)
 	}
 
 	return items, nil

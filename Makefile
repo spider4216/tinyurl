@@ -22,3 +22,6 @@ lint:
 
 fmt:
 	golangci-lint fmt
+
+build:
+	go build -o ./cmd/shortener ./cmd/shortener

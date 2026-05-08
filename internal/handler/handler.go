@@ -417,6 +417,8 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.logger.Debug("extracted user id is ", userId)
+
 	// Если кука пришла, то нужно ее провалидировать
 	if !needSetCookie {
 		h.logger.Debug("Validate user...")
@@ -428,12 +430,14 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	urls, err := h.service.GetUrlsByUserId(ctx, userId)
+	urls, err := h.service.GetUrlsByUserId(ctx, userId, h.conf.BaseUrl)
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	h.logger.Debug("Got urls: ", urls)
 
 	if len(urls) <= 0 {
 		h.logger.Debug("No items for user", userId)

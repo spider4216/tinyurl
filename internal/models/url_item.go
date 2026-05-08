@@ -1,6 +1,6 @@
 package models
 
 type UrlItem struct {
-	ShortUrl    string
-	OriginarUrl string
+	ShortUrl    string `json:"short_url"`
+	OriginarUrl string `json:"original_url"`
 }
