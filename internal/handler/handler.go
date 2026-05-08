@@ -59,7 +59,15 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urls := h.service.MapForMapUrlIds(req, "")
+	userId, needSetCookie, err := h.authCookie(r)
+
+	if err != nil {
+		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	urls := h.service.MapForMapUrlIds(req, userId)
 
 	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
 		h.logger.Error("unmarshall error", zap.Error(err))
@@ -72,6 +80,13 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("cannot marshall", zap.Error(err))
 		return
+	}
+
+	if needSetCookie {
+		h.logger.Debug("Set cookie")
+		cookie := h.createCookie(userId)
+
+		http.SetCookie(w, &cookie)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -114,7 +129,15 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	err = h.service.StoreData(ctx, id, string(req.Url), "")
+	userId, needSetCookie, err := h.authCookie(r)
+
+	if err != nil {
+		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = h.service.StoreData(ctx, id, string(req.Url), userId)
 
 	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
@@ -145,6 +168,13 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("cannot marshall", zap.Error(err))
 		return
+	}
+
+	if needSetCookie {
+		h.logger.Debug("Set cookie")
+		cookie := h.createCookie(userId)
+
+		http.SetCookie(w, &cookie)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -219,15 +249,8 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "plain/text")
 
 	if needSetCookie {
-		cookie := http.Cookie{
-			Name:     "user_id",
-			Value:    userId,
-			Path:     "/",
-			Expires:  time.Now().Add(24 * time.Hour), // Expires in 24 hours
-			HttpOnly: true,                           // Protects against XSS
-			Secure:   true,                           // Only sent over HTTPS
-			SameSite: http.SameSiteLaxMode,           // CSRF protection
-		}
+		h.logger.Debug("Set cookie")
+		cookie := h.createCookie(userId)
 
 		http.SetCookie(w, &cookie)
 	}
@@ -320,4 +343,16 @@ func (h Handler) authCookie(r *http.Request) (userId string, needSet bool, err e
 	}
 
 	return
+}
+
+func (h Handler) createCookie(userId string) http.Cookie {
+	return http.Cookie{
+		Name:     "user_id",
+		Value:    userId,
+		Path:     "/",
+		Expires:  time.Now().Add(h.conf.CookieTTL),
+		HttpOnly: true,                 // Protects against XSS
+		Secure:   true,                 // Only sent over HTTPS
+		SameSite: http.SameSiteLaxMode, // CSRF protection
+	}
 }

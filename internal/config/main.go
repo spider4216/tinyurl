@@ -19,6 +19,7 @@ type Config struct {
 	WriteTimeout  time.Duration `env:"WRITE_TIMEOUT" envDefault:"10s"`
 	IdleTimeout   time.Duration `env:"IDLE_TIMEOUT" envDefault:"30s"`
 	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048"`
+	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h"`
 }
 
 func New() (*Config, error) {
