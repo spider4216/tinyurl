@@ -166,25 +166,12 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authCookie, err := r.Cookie("user_id")
-	needSetCookie := false
-	userId := ""
+	userId, needSetCookie, err := h.authCookie(r)
 
 	if err != nil {
-		// Если ошибка и она не связана с ErrNoCookie, то останавливаемся
-		if err != http.ErrNoCookie {
-			h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		// Если куки просто нет, то генерируем новый User ID
-		userId = uuid.NewString()
-		// Перед позитивным ответом, нужно установить новую куку
-		needSetCookie = true
-	} else {
-		// Кука существует, извлекаем из нее ID пользователя
-		userId = authCookie.Value
+		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
@@ -308,4 +295,29 @@ func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	h.logger.Info("Ping store OK")
+}
+
+func (h Handler) authCookie(r *http.Request) (userId string, needSet bool, err error) {
+	authCookie, err := r.Cookie("user_id")
+
+	if err != nil {
+		// Если ошибка и она не связана с ErrNoCookie, то останавливаемся
+		if err != http.ErrNoCookie {
+			h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+			return
+		}
+
+		// Если эта ошибка ErrNoCookie, то не считаем ее ошибкой
+		err = nil
+
+		// Если куки просто нет, то генерируем новый User ID
+		userId = uuid.NewString()
+		// Перед позитивным ответом, нужно установить новую куку
+		needSet = true
+	} else {
+		// Кука существует, извлекаем из нее ID пользователя
+		userId = authCookie.Value
+	}
+
+	return
 }
