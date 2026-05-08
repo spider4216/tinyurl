@@ -62,7 +62,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, sign, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -78,7 +77,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 			userId = uuid.NewString()
 			// Подписываем
 			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-
 			if err != nil {
 				h.logger.Error("cannot sign", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -109,7 +107,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		h.logger.Debug("Set cookie")
 
 		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-
 		if err != nil {
 			h.logger.Error("cannot sign user id")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -162,7 +159,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	id := h.service.GenerateId()
 
 	userId, needSetCookie, sign, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -178,7 +174,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 			userId = uuid.NewString()
 			// Подписываем
 			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-
 			if err != nil {
 				h.logger.Error("cannot sign", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -227,7 +222,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		h.logger.Debug("Set cookie")
 
 		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-
 		if err != nil {
 			h.logger.Error("cannot sign user id")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -259,7 +253,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, sign, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -275,7 +268,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 			userId = uuid.NewString()
 			// Подписываем
 			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-
 			if err != nil {
 				h.logger.Error("cannot sign", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -334,7 +326,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	if needSetCookie {
 		h.logger.Debug("Set cookie")
 		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-
 		if err != nil {
 			h.logger.Error("cannot sign user id")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -364,7 +355,6 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, sign, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -380,7 +370,6 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 			userId = uuid.NewString()
 			// Подписываем
 			sign, err = h.service.SignVal(userId, h.conf.SignKey)
-
 			if err != nil {
 				h.logger.Error("cannot sign", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -423,7 +412,6 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	if needSetCookie {
 		h.logger.Debug("Set cookie")
 		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-
 		if err != nil {
 			h.logger.Error("cannot sign user id")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -455,7 +443,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, sign, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -474,7 +461,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urls, err := h.service.GetUrlsByUserId(ctx, userId)
-
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
 		w.WriteHeader(http.StatusNotFound)
@@ -488,7 +474,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d, err := json.Marshal(urls)
-
 	if err != nil {
 		h.logger.Error("marshal response error", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -538,7 +523,6 @@ func (h Handler) authCookie(r *http.Request) (userId string, needSet bool, sign 
 
 		// Подписываем новый идентификатор
 		sign, err = h.service.SignVal(userId, h.conf.SignKey)
-
 		if err != nil {
 			return
 		}

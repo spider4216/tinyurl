@@ -102,7 +102,6 @@ func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error)
 
 func (s Service) GetUrlsByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
 	items, err := s.repo.GetByUserId(ctx, userId)
-
 	if err != nil {
 		return nil, err
 	}
@@ -140,21 +139,18 @@ func (s Service) SignVal(val string, key string) (string, error) {
 func (s Service) ValidateSign(val string, key string, sig string) error {
 	// Подписываем ключ
 	m, err := s.SignVal(val, key)
-
 	if err != nil {
 		return err
 	}
 
 	// Декодим и получаем байты
 	src, err := hex.DecodeString(m)
-
 	if err != nil {
 		return err
 	}
 
 	// Декодим подпись которую нужно проверить
 	dst, err := hex.DecodeString(sig)
-
 	if err != nil {
 		return err
 	}
