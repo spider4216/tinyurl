@@ -61,22 +61,12 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
+	userId, needSetCookie, _, err := h.authCookie(r)
 
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			h.logger.Error("Unauthorized", zap.Error(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 	}
 
 	urls := h.service.MapForMapUrlIds(req, userId)
@@ -150,22 +140,12 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
+	userId, needSetCookie, _, err := h.authCookie(r)
 
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			h.logger.Error("Unauthorized", zap.Error(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 	}
 
 	err = h.service.StoreData(ctx, id, string(req.Url), userId)
@@ -236,22 +216,12 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
+	userId, needSetCookie, _, err := h.authCookie(r)
 
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			h.logger.Error("Unauthorized", zap.Error(err))
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
