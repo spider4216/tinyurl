@@ -60,7 +60,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -130,7 +129,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	id := h.service.GenerateId()
 
 	userId, needSetCookie, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -197,7 +195,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, needSetCookie, err := h.authCookie(r)
-
 	if err != nil {
 		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
