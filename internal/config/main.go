@@ -20,6 +20,7 @@ type Config struct {
 	IdleTimeout   time.Duration `env:"IDLE_TIMEOUT" envDefault:"30s"`
 	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048"`
 	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h"`
+	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty"` // Ключ для подписи значения куки
 }
 
 func New() (*Config, error) {
