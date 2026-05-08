@@ -440,7 +440,22 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Got urls: ", urls)
 
 	if len(urls) <= 0 {
-		h.logger.Debug("No items for user", userId)
+		h.logger.Debug("No items for user ", userId)
+		// По требованию если нету urls, то выдаем новую куку
+		userId = uuid.NewString()
+		// Устанавливаем новую куку
+		h.logger.Debug("Set cookie")
+		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
+		if err != nil {
+			h.logger.Error("cannot sign user id")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		cookie := h.createCookie(userId, uidSign)
+
+		http.SetCookie(w, &cookie)
+
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
