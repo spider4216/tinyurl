@@ -159,7 +159,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	// Если кука пришла, то нужно ее провалидировать
 	if !needSetCookie {
-		h.logger.Debug("Validate user...")
+		h.logger.Debug("validate user...")
 		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
 			// По требованию если токен не валидный, устанавливаем новый
 			// Делаем новый userId
@@ -480,9 +480,6 @@ func (h Handler) authCookie(r *http.Request) (userId string, needSet bool, sign 
 			h.logger.Error("something went wrong while getting cookie", zap.Error(err))
 			return
 		}
-
-		// Если эта ошибка ErrNoCookie, то не считаем ее ошибкой
-		err = nil
 
 		// Если куки просто нет, то генерируем новый User ID
 		userId = uuid.NewString()

@@ -159,5 +159,5 @@ func (s Service) ValidateSign(val string, key string, sig string) error {
 		return nil
 	}
 
-	return errors.New("Invalid signature")
+	return errors.New("invalid signature")
 }
