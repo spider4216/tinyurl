@@ -39,6 +39,7 @@ func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData)
 			"short_url":    item.Key,
 			"original_url": item.Value,
 			"user_id":      item.UserId,
+			"is_deleted":   "false",
 		}
 
 		b, err := json.Marshal(i)
@@ -58,6 +59,7 @@ func (r *Repository) Insert(ctx context.Context, data models.InsertData) error {
 		"short_url":    data.Key,
 		"original_url": data.Value,
 		"user_id":      data.UserId,
+		"is_deleted":   "false",
 	}
 
 	b, err := json.Marshal(raw)
