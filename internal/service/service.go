@@ -40,6 +40,10 @@ func (s Service) StoreData(ctx context.Context, id string, val string, userId st
 	return s.repo.Insert(ctx, in)
 }
 
+func (s Service) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	return s.repo.DeleteByIds(ctx, ids, userId)
+}
+
 func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
 	in := []models.InsertData{}
 

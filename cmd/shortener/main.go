@@ -37,6 +37,7 @@ func main() {
 		r.Get("/ping", http.HandlerFunc(handler.Ping))
 		r.Post("/api/shorten/batch", http.HandlerFunc(handler.GetShortenUrls))
 		r.Get("/api/user/urls", http.HandlerFunc(handler.Urls))
+		r.Delete("/api/user/urls", http.HandlerFunc(handler.DeleteUrls))
 	})
 
 	srv := &http.Server{

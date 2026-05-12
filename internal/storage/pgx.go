@@ -171,3 +171,11 @@ func (db *PgxStorage) Source() any {
 func (db *PgxStorage) StoreName() string {
 	return PostgresDriver
 }
+
+func (db *PgxStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	sql := "UPDATE urls SET is_deleted=TRUE WHERE short = ANY($1) AND user_id = $2"
+
+	_, err := db.Con.ExecContext(ctx, sql, ids, userId)
+
+	return err
+}

@@ -101,3 +101,7 @@ func (fs *FileStorage) Source() any {
 func (fs *FileStorage) StoreName() string {
 	return FileDriver
 }
+
+func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	return nil
+}

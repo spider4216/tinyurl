@@ -31,6 +31,68 @@ type Handler struct {
 	logger  *zap.SugaredLogger
 }
 
+func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		if _, err := w.Write([]byte("Method not allowed")); err != nil {
+			h.logger.Error("failed to write response", zap.Error(err))
+		}
+
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+
+	defer cancel()
+
+	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
+
+	body, err := io.ReadAll(lr)
+	if err != nil {
+		h.logger.Error("failed to write response", zap.Error(err))
+		return
+	}
+
+	req := []string{}
+
+	if err := json.Unmarshal(body, &req); err != nil {
+		h.logger.Error("unmarshall error", zap.Error(err))
+		return
+	}
+
+	userId, needSetCookie, sign, err := h.authCookie(r)
+	if err != nil {
+		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Если кука пришла, то нужно ее провалидировать
+	if !needSetCookie {
+		h.logger.Debug("Validate user...")
+		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
+			// Если  токен не валидный, нет смысла ходить в БД и удалять
+			// записи, поскольку таковых не будет
+			h.logger.Error("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+
+	if len(req) <= 0 {
+		h.logger.Error("Empty ids")
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	h.service.DeleteBatch(ctx, req, userId)
+
+	h.logger.Debug("Accepted OK")
+	w.WriteHeader(http.StatusAccepted)
+
+}
+
 func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

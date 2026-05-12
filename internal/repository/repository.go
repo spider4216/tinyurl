@@ -26,6 +26,10 @@ type record struct {
 	UserId      string `json:"user_id"`
 }
 
+func (r *Repository) DeleteByIds(ctx context.Context, ids []string, userId string) error {
+	return r.store.DeleteBatch(ctx, ids, userId)
+}
+
 func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData) error {
 	raw := [][]byte{}
 

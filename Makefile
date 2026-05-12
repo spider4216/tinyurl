@@ -25,3 +25,15 @@ fmt:
 
 build:
 	go build -o ./cmd/shortener ./cmd/shortener
+
+migration-gen:
+	migrate create -ext sql -dir ./migrations -seq $(name)
+
+migrate-up:
+	migrate -path ./migrations -database $(dsn) up $(ver)
+
+migrate-down:
+	migrate -path ./migrations -database $(dsn) down $(ver)
+
+migrate-force:
+	migrate -path ./migrations -database $(dsn) force $(ver)

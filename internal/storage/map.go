@@ -91,3 +91,7 @@ func (ms *MapStorage) Source() any {
 func (ms *MapStorage) StoreName() string {
 	return MapDriver
 }
+
+func (ms *MapStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	return nil
+}

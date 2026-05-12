@@ -21,6 +21,7 @@ type Storage interface {
 	Ping(ctx context.Context) error
 	Source() any
 	StoreName() string
+	DeleteBatch(ctx context.Context, ids []string, userId string) error
 }
 
 type Iterator interface {
