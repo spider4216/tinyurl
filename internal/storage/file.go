@@ -104,16 +104,14 @@ func (fs *FileStorage) StoreName() string {
 	return FileDriver
 }
 
+// Поскольку pgx при работе с базой требует условия
+// приходится идти на компромис и делать реализацию поиска
+// в самом store слое, чтобы соблюсти единый интерфейс
+// Здесь реализована внутренняя специфика
+// связанная с конкретным хранилищем, в данном случае с файлом
 func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-
-	// Поскольку pgx при работе с базой требует условия
-	// приходится идти на компромис и делать реализацию поиска
-	// в самом store слое, чтобы соблюсти единый интерфейс
-
-	// Здесь реализована внутренняя специфика
-	// связанная с конкретным хранилищем, в данном случае с файлом
 
 	// Вернуть курсор вначало
 	if _, err := fs.file.Seek(0, 0); err != nil {
@@ -124,9 +122,7 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 
 	// Создать временный файл, туда будет записываться
 	// измененные данные
-
 	tmpFile, err := os.CreateTemp("", "storage-tmp.json")
-
 	if err != nil {
 		return err
 	}
@@ -162,7 +158,6 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 		}
 
 		updLine, err := json.Marshal(rec)
-
 		if err != nil {
 			return err
 		}
@@ -194,7 +189,6 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 
 	// Открываем заново
 	file, err := os.OpenFile(originPath, os.O_RDWR|os.O_CREATE, 0o666)
-
 	if err != nil {
 		return err
 	}

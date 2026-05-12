@@ -94,11 +94,10 @@ func (ms *MapStorage) StoreName() string {
 	return MapDriver
 }
 
+// Здесь реализована внутренняя специфика
+// связанная с конкретным хранилищем, в данном случае с слайсом, а именно
+// специфика условий для удаления из слайса
 func (ms *MapStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
-	// Здесь реализована внутренняя специфика
-	// связанная с конкретным хранилищем, в данном случае с слайсом, а именно
-	// специфика условий для удаления из слайса
-
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -127,7 +126,6 @@ func (ms *MapStorage) DeleteBatch(ctx context.Context, ids []string, userId stri
 		}
 
 		updLine, err := json.Marshal(line)
-
 		if err != nil {
 			return err
 		}

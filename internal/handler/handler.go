@@ -90,7 +90,6 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Debug("Accepted OK")
 	w.WriteHeader(http.StatusAccepted)
-
 }
 
 func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
