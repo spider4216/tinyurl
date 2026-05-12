@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"slices"
 	"sync"
 )
 
@@ -93,5 +95,45 @@ func (ms *MapStorage) StoreName() string {
 }
 
 func (ms *MapStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	// Здесь реализована внутренняя специфика
+	// связанная с конкретным хранилищем, в данном случае с слайсом, а именно
+	// специфика условий для удаления из слайса
+
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	for i, item := range ms.store {
+		line := map[string]string{}
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return err
+		}
+
+		sourceId, ok := line["user_id"]
+
+		if !ok {
+			continue
+		}
+
+		short, ok := line["short_url"]
+
+		if !ok {
+			continue
+		}
+
+		if sourceId == userId && slices.Contains(ids, short) {
+			// Обновляем is_deleted
+			line["is_deleted"] = "true"
+		}
+
+		updLine, err := json.Marshal(line)
+
+		if err != nil {
+			return err
+		}
+
+		ms.store[i] = string(updLine)
+	}
+
 	return nil
 }
