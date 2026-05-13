@@ -44,6 +44,10 @@ func (s Service) StoreData(ctx context.Context, id string, val string, userId st
 }
 
 func (s Service) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	return s.repo.DeleteByIds(ctx, ids, userId)
+}
+
+func (s Service) DeleteBatchAsync(ctx context.Context, ids []string, userId string) error {
 	// канал с данными
 	inputCh := s.GenerateChunk(ids, 2, userId)
 

@@ -42,10 +42,6 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
-
-	defer cancel()
-
 	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(lr)
@@ -86,7 +82,9 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.service.DeleteBatch(ctx, req, userId)
+	ctx := context.WithoutCancel(context.Background())
+
+	go h.service.DeleteBatchAsync(ctx, req, userId)
 
 	h.logger.Debug("Accepted OK")
 	w.WriteHeader(http.StatusAccepted)
