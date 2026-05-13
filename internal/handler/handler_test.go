@@ -251,6 +251,7 @@ func TestGetUrl(t *testing.T) {
 				"uuid":         tc.id,
 				"original_url": tc.urlSrc,
 				"short_url":    tc.id,
+				"is_deleted":   "false",
 			}
 
 			b, err := json.Marshal(m)
