@@ -199,15 +199,9 @@ func TestGenerateId(t *testing.T) {
 }
 
 func TestUrls(t *testing.T) {
-	type urls struct {
-		short  string
-		origin string
-	}
-
 	type want struct {
 		contentType  string
 		status       int
-		urls         []urls
 		expectCookie bool
 	}
 

@@ -34,7 +34,7 @@ type Iterator interface {
 func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage, error) {
 	switch driver {
 	case FileDriver:
-		fileStore, err := NewFileStorage(cfg.FileStorePath)
+		fileStore, err := NewFileStorage(cfg.FileStorePath, logger)
 		if err != nil {
 			return nil, err
 		}

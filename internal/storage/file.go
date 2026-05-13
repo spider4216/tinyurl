@@ -8,21 +8,25 @@ import (
 	"os"
 	"slices"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 type FileStorage struct {
-	file *os.File
-	mu   sync.RWMutex
+	file   *os.File
+	mu     sync.RWMutex
+	logger *zap.SugaredLogger
 }
 
-func NewFileStorage(filename string) (*FileStorage, error) {
+func NewFileStorage(filename string, logger *zap.SugaredLogger) (*FileStorage, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FileStorage{
-		file: file,
+		file:   file,
+		logger: logger,
 	}, nil
 }
 
@@ -128,7 +132,11 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 	}
 
 	// Удаляем временный файл после завершения обновления
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			fs.logger.Warn("cannot remove tmp file", zap.Error(err))
+		}
+	}()
 
 	// Произвожу поиск
 	for scanner.Scan() {

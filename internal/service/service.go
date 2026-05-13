@@ -54,7 +54,7 @@ func (s Service) DeleteBatch(ctx context.Context, ids []string, userId string) e
 	return s.repo.DeleteByIds(ctx, ids, userId)
 }
 
-func (s Service) DeleteBatchAsync(ctx context.Context, ids []string, userId string) error {
+func (s Service) DeleteBatchAsync(ctx context.Context, ids []string, userId string) {
 	// канал с данными
 	inputCh := s.GenerateChunk(ids, 2, userId)
 
@@ -72,8 +72,6 @@ func (s Service) DeleteBatchAsync(ctx context.Context, ids []string, userId stri
 			s.logger.Error("Chank delete error ", zap.Error(res.Err), res.IDs)
 		}
 	}
-
-	return nil
 }
 
 func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
@@ -120,7 +118,6 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	}
 
 	b, err := strconv.ParseBool(deleted)
-
 	if err != nil {
 		return "", err
 	}
