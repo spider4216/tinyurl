@@ -29,8 +29,9 @@ func (i *PGXIterator) Row() ([]byte, error) {
 	var short string
 	var origin string
 	var userId string
+	var isDeleted string
 
-	err := i.rows.Scan(&short, &origin, &userId)
+	err := i.rows.Scan(&short, &origin, &userId, &isDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +43,7 @@ func (i *PGXIterator) Row() ([]byte, error) {
 		"short_url":    short,
 		"original_url": origin,
 		"user_id":      userId,
+		"is_deleted":   isDeleted,
 	}
 
 	b, err := json.Marshal(tmp)
@@ -152,7 +154,7 @@ func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
 }
 
 func (db *PgxStorage) Load(ctx context.Context) (Iterator, error) {
-	rows, err := db.Con.QueryContext(ctx, "SELECT short, original, user_id FROM urls")
+	rows, err := db.Con.QueryContext(ctx, "SELECT short, original, user_id, is_deleted FROM urls")
 	if err != nil {
 		return nil, err
 	}

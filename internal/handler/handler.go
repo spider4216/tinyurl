@@ -415,6 +415,14 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	url, err := h.service.GetUrl(ctx, id)
+	var deletedError service.DeletedUrlError
+
+	if errors.As(err, &deletedError) {
+		h.logger.Error("url was deleted")
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
 		w.WriteHeader(http.StatusNotFound)

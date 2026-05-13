@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -28,6 +29,12 @@ func New(repo *repository.Repository, logger *zap.SugaredLogger) Service {
 type Service struct {
 	repo   *repository.Repository
 	logger *zap.SugaredLogger
+}
+
+type DeletedUrlError struct{}
+
+func (e DeletedUrlError) Error() string {
+	return "Url was deleted"
 }
 
 func (s Service) GenerateId() string {
@@ -98,10 +105,28 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 		return "", err
 	}
 
+	s.logger.Debug("Url data ", itemMap)
+
 	url, ok := itemMap["original_url"]
 
 	if !ok {
 		return "", fmt.Errorf("cannot get original url from map")
+	}
+
+	deleted, ok := itemMap["is_deleted"]
+
+	if !ok {
+		return "", fmt.Errorf("cannot get is_deleted from map")
+	}
+
+	b, err := strconv.ParseBool(deleted)
+
+	if err != nil {
+		return "", err
+	}
+
+	if b {
+		return "", DeletedUrlError{}
 	}
 
 	return url, nil
