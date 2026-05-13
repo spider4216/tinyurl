@@ -29,8 +29,8 @@ func prepateHandler(store storage.Storage) Handler {
 	}
 
 	r := repository.New(store)
-	s := service.New(r)
 	logger, err := logger.InitZap("debug")
+	s := service.New(r, logger)
 	if err != nil {
 		panic("cannot prepare handler")
 	}

@@ -86,7 +86,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.DeleteBatch(ctx, req, userId)
+	go h.service.DeleteBatch(ctx, req, userId)
 
 	h.logger.Debug("Accepted OK")
 	w.WriteHeader(http.StatusAccepted)

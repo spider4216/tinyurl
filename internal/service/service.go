@@ -15,16 +15,19 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
+	"go.uber.org/zap"
 )
 
-func New(repo *repository.Repository) Service {
+func New(repo *repository.Repository, logger *zap.SugaredLogger) Service {
 	return Service{
-		repo: repo,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
 type Service struct {
-	repo *repository.Repository
+	repo   *repository.Repository
+	logger *zap.SugaredLogger
 }
 
 func (s Service) GenerateId() string {
@@ -41,7 +44,25 @@ func (s Service) StoreData(ctx context.Context, id string, val string, userId st
 }
 
 func (s Service) DeleteBatch(ctx context.Context, ids []string, userId string) error {
-	return s.repo.DeleteByIds(ctx, ids, userId)
+	// канал с данными
+	inputCh := s.GenerateChunk(ids, 2, userId)
+
+	// получаем слайс каналов
+	channels := s.FanOutDeleteBatch(ctx, inputCh)
+
+	// а теперь объединяем каналы в один
+	resCh := s.FanInDeleteBatch(channels)
+
+	// логируем результаты расчетов из канала
+	for res := range resCh {
+		s.logger.Debug("Result chank delete received")
+
+		if res.Err != nil {
+			s.logger.Error("Chank delete error ", zap.Error(res.Err), res.IDs)
+		}
+	}
+
+	return nil
 }
 
 func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
