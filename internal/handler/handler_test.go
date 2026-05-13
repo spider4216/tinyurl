@@ -198,6 +198,75 @@ func TestGenerateId(t *testing.T) {
 	}
 }
 
+func TestUrls(t *testing.T) {
+	type urls struct {
+		short  string
+		origin string
+	}
+
+	type want struct {
+		contentType  string
+		status       int
+		urls         []urls
+		expectCookie bool
+	}
+
+	cases := []struct {
+		name   string
+		method string
+		want   want
+	}{
+		{
+			name:   "Case #1 Method return cookie",
+			method: http.MethodGet,
+			want: want{
+				status:       http.StatusNoContent,
+				expectCookie: true,
+			},
+		},
+	}
+
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
+	for _, tc := range cases {
+		store, err := storage.New(storage.MapDriver, cfg, logger)
+		require.NoError(t, err)
+		h := prepateHandler(store)
+
+		t.Run(tc.name, func(t *testing.T) {
+			r := httptest.NewRequest(tc.method, "/api/user/urls", nil)
+			w := httptest.NewRecorder()
+
+			h.Urls(w, r)
+			resp := w.Result()
+
+			if tc.want.contentType != "" {
+				assert.Equal(t, tc.want.contentType, resp.Header.Get("Content-Type"))
+			}
+
+			if tc.want.expectCookie {
+				cookies := resp.Cookies()
+				var userCookie *http.Cookie
+
+				for _, cookie := range cookies {
+					if cookie.Name == "user_id" {
+						userCookie = cookie
+					}
+				}
+
+				require.NotNil(t, userCookie)
+				assert.NotEmpty(t, userCookie)
+			}
+
+			assert.Equal(t, tc.want.status, resp.StatusCode)
+		})
+	}
+}
+
 func TestGetUrl(t *testing.T) {
 	type want struct {
 		contentType string
