@@ -310,16 +310,14 @@ func TestGetUrl(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
-			m := map[string]string{
-				"original_url": tc.urlSrc,
-				"short_url":    tc.id,
-				"is_deleted":   "false",
+			m := models.InsertData{
+				Key:   tc.id,
+				Value: tc.urlSrc,
 			}
 
-			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			err = store.Save(ctx, b)
+			err = store.CreateUrl(ctx, m)
 			require.NoError(t, err)
 		}
 

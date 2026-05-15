@@ -17,14 +17,6 @@ type Repository struct {
 	store storage.Storage
 }
 
-type record struct {
-	Key         string `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
-	UserId      string `json:"user_id"`
-	IsDeleted   string `json:"is_deleted"`
-}
-
 func (r *Repository) DeleteByIds(ctx context.Context, ids []string, userId string) error {
 	return r.store.DeleteBatch(ctx, ids, userId)
 }
