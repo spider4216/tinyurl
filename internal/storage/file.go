@@ -378,3 +378,13 @@ func (fs *FileStorage) CreateUrl(ctx context.Context, data models.InsertData) er
 		return nil
 	}
 }
+
+func (fs *FileStorage) CreateUrls(ctx context.Context, data []models.InsertData) error {
+	for _, item := range data {
+		if err := fs.CreateUrl(ctx, item); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

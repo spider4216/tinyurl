@@ -276,3 +276,13 @@ func (ms *MapStorage) CreateUrl(ctx context.Context, data models.InsertData) err
 
 	return nil
 }
+
+func (ms *MapStorage) CreateUrls(ctx context.Context, data []models.InsertData) error {
+	for _, item := range data {
+		if err := ms.CreateUrl(ctx, item); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

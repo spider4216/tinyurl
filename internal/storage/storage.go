@@ -27,6 +27,7 @@ type Storage interface {
 	GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error)
 	GetByShort(ctx context.Context, origin string) (*models.UrlItem, error)
 	CreateUrl(ctx context.Context, data models.InsertData) error
+	CreateUrls(ctx context.Context, data []models.InsertData) error
 }
 
 type Iterator interface {

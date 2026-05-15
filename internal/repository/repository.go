@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/storage"
@@ -31,26 +30,7 @@ func (r *Repository) DeleteByIds(ctx context.Context, ids []string, userId strin
 }
 
 func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData) error {
-	raw := [][]byte{}
-
-	for _, item := range items {
-		i := map[string]string{
-			"uuid":         item.Key,
-			"short_url":    item.Key,
-			"original_url": item.Value,
-			"user_id":      item.UserId,
-			"is_deleted":   "false",
-		}
-
-		b, err := json.Marshal(i)
-		if err != nil {
-			return err
-		}
-
-		raw = append(raw, b)
-	}
-
-	return r.store.SaveBatch(ctx, raw)
+	return r.store.CreateUrls(ctx, items)
 }
 
 func (r *Repository) Insert(ctx context.Context, data models.InsertData) error {

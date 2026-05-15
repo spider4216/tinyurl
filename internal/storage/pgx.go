@@ -287,3 +287,25 @@ func (db *PgxStorage) CreateUrl(ctx context.Context, data models.InsertData) err
 
 	return err
 }
+
+func (db *PgxStorage) CreateUrls(ctx context.Context, data []models.InsertData) error {
+	tx, err := db.Con.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, item := range data {
+		sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+		_, err := tx.ExecContext(ctx, sql, item.Key, item.Value, item.UserId)
+		if err != nil {
+			if transErr := tx.Rollback(); transErr != nil {
+				return transErr
+			}
+
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
