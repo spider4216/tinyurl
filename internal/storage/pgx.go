@@ -55,7 +55,7 @@ func (db *PgxStorage) DeleteBatch(ctx context.Context, ids []string, userId stri
 func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
 	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1"
 
-	rows, err := db.Con.QueryContext(ctx, sql)
+	rows, err := db.Con.QueryContext(ctx, sql, userId)
 
 	if err != nil {
 		return nil, err
