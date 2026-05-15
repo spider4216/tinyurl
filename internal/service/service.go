@@ -7,10 +7,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -91,46 +89,21 @@ func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
 }
 
 func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
-	item, err := s.repo.Get(ctx, k)
+	item, err := s.repo.GetByShort(ctx, k)
+
 	if err != nil {
 		return "", err
 	}
 
-	itemMap := map[string]string{}
-
-	err = json.Unmarshal([]byte(item), &itemMap)
-	if err != nil {
-		return "", err
-	}
-
-	s.logger.Debug("Url data ", itemMap)
-
-	url, ok := itemMap["original_url"]
-
-	if !ok {
-		return "", fmt.Errorf("cannot get original url from map")
-	}
-
-	deleted, ok := itemMap["is_deleted"]
-
-	if !ok {
-		return "", fmt.Errorf("cannot get is_deleted from map")
-	}
-
-	b, err := strconv.ParseBool(deleted)
-	if err != nil {
-		return "", err
-	}
-
-	if b {
+	if item.IsDeleted {
 		return "", DeletedUrlError{}
 	}
 
-	return url, nil
+	return item.OriginarUrl, nil
 }
 
 func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error) {
-	item, err := s.repo.GetByValue(ctx, v)
+	item, err := s.repo.GetByOrigin(ctx, v)
 
 	if err != nil {
 		return "", err

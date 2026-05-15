@@ -212,3 +212,35 @@ func (ms *MapStorage) GetByOrigin(ctx context.Context, origin string) (*models.U
 
 	return nil, errors.New("cannot find url")
 }
+
+func (ms *MapStorage) GetByShort(ctx context.Context, short string) (*models.UrlItem, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	for _, item := range ms.store {
+		var line recordSlice
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return nil, err
+		}
+
+		if line.Short != short {
+			continue
+		}
+
+		b, err := strconv.ParseBool(line.IsDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &models.UrlItem{
+			OriginarUrl: line.Origin,
+			ShortUrl:    line.Short,
+			IsDeleted:   b,
+			UserId:      line.UserId,
+		}, nil
+	}
+
+	return nil, errors.New("cannot find url")
+}

@@ -303,5 +303,47 @@ func (fs *FileStorage) GetByOrigin(ctx context.Context, origin string) (*models.
 	}
 
 	return nil, errors.New("cannot find url")
+}
 
+func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.UrlItem, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// Вернуть курсор вначало
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(fs.file)
+
+	for scanner.Scan() {
+		var item recordFile
+
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			continue
+		}
+
+		if item.Short != short {
+			continue
+		}
+
+		b, err := strconv.ParseBool(item.IsDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &models.UrlItem{
+			OriginarUrl: item.Origin,
+			ShortUrl:    item.Short,
+			IsDeleted:   b,
+			UserId:      item.UserId,
+		}, nil
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New("cannot find url")
 }

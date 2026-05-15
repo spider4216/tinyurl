@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/storage"
@@ -71,33 +70,11 @@ func (r *Repository) Insert(ctx context.Context, data models.InsertData) error {
 	return r.store.Save(ctx, b)
 }
 
-func (r *Repository) Get(ctx context.Context, k string) (string, error) {
-	rows, err := r.store.Load(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	for rows.Next() {
-		item, err := rows.Row()
-		if err != nil {
-			return "", err
-		}
-
-		rec := record{}
-
-		if err := json.Unmarshal([]byte(item), &rec); err != nil {
-			continue
-		}
-
-		if rec.Key == k {
-			return string(item), nil
-		}
-	}
-
-	return "", errors.New("cannot found item")
+func (r *Repository) GetByShort(ctx context.Context, k string) (*models.UrlItem, error) {
+	return r.store.GetByShort(ctx, k)
 }
 
-func (r *Repository) GetByValue(ctx context.Context, v string) (*models.UrlItem, error) {
+func (r *Repository) GetByOrigin(ctx context.Context, v string) (*models.UrlItem, error) {
 	return r.store.GetByOrigin(ctx, v)
 }
 

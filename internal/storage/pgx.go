@@ -256,3 +256,26 @@ func (db *PgxStorage) GetByOrigin(ctx context.Context, origin string) (*models.U
 		IsDeleted:   item.IsDeleted,
 	}, nil
 }
+
+func (db *PgxStorage) GetByShort(ctx context.Context, short string) (*models.UrlItem, error) {
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE short = $1"
+	row := db.Con.QueryRowContext(ctx, sql, short)
+
+	var item recordPgx
+
+	if err := row.Scan(
+		&item.ShortUrl,
+		&item.OriginarUrl,
+		&item.UserId,
+		&item.IsDeleted,
+	); err != nil {
+		return nil, err
+	}
+
+	return &models.UrlItem{
+		OriginarUrl: item.OriginarUrl,
+		ShortUrl:    item.ShortUrl,
+		UserId:      item.UserId,
+		IsDeleted:   item.IsDeleted,
+	}, nil
+}
