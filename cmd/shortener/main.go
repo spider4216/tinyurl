@@ -23,13 +23,14 @@ func main() {
 	repo := repository.New(app.store)
 	service := service.New(repo, app.logger)
 	handler := handler.New(app.cfg, app.logger, service)
-	middlewares := middleware.New(app.logger)
+	middlewares := middleware.New(app.logger, app.cfg)
 
 	r := chi.NewRouter()
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middlewares.WithLogging)
 		r.Use(middlewares.Gzip)
+		r.Use(middlewares.WithAuth)
 
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))

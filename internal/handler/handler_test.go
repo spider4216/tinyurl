@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
+	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -49,6 +49,7 @@ func TestGetShortenUrl(t *testing.T) {
 		method string
 		urlTo  string
 		urlSrc string
+		userId string
 		want   want
 	}{
 		{
@@ -56,6 +57,7 @@ func TestGetShortenUrl(t *testing.T) {
 			method: http.MethodPost,
 			urlTo:  "/api/shorten",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty1",
 			want: want{
 				contentType: "application/json",
 				status:      http.StatusCreated,
@@ -66,6 +68,7 @@ func TestGetShortenUrl(t *testing.T) {
 			method: http.MethodGet,
 			urlTo:  "/",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty2",
 			want: want{
 				status: http.StatusMethodNotAllowed,
 			},
@@ -91,6 +94,11 @@ func TestGetShortenUrl(t *testing.T) {
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+
+		r = r.WithContext(ctx)
 
 		h.GetShortenUrl(w, r)
 
@@ -135,6 +143,7 @@ func TestGenerateId(t *testing.T) {
 		method string
 		urlTo  string
 		urlSrc string
+		userId string
 		want   want
 	}{
 		{
@@ -142,6 +151,7 @@ func TestGenerateId(t *testing.T) {
 			method: http.MethodPost,
 			urlTo:  "/",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty6",
 			want: want{
 				contentType: "plain/text",
 				status:      http.StatusCreated,
@@ -152,6 +162,7 @@ func TestGenerateId(t *testing.T) {
 			method: http.MethodGet,
 			urlTo:  "/",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty7",
 			want: want{
 				status: http.StatusMethodNotAllowed,
 			},
@@ -171,6 +182,11 @@ func TestGenerateId(t *testing.T) {
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+
+		r = r.WithContext(ctx)
 
 		h.GenerateId(w, r)
 
@@ -208,14 +224,15 @@ func TestUrls(t *testing.T) {
 	cases := []struct {
 		name   string
 		method string
+		userId string
 		want   want
 	}{
 		{
 			name:   "Case #1 Method return cookie",
 			method: http.MethodGet,
+			userId: "qwerty4",
 			want: want{
-				status:       http.StatusNoContent,
-				expectCookie: true,
+				status: http.StatusNoContent,
 			},
 		},
 	}
@@ -229,31 +246,24 @@ func TestUrls(t *testing.T) {
 	for _, tc := range cases {
 		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/user/urls", nil)
+		w := httptest.NewRecorder()
+
 		h := prepateHandler(store)
 
-		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest(tc.method, "/api/user/urls", nil)
-			w := httptest.NewRecorder()
+		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
 
-			h.Urls(w, r)
+		r = r.WithContext(ctx)
+
+		h.Urls(w, r)
+
+		t.Run(tc.name, func(t *testing.T) {
 			resp := w.Result()
 
 			if tc.want.contentType != "" {
 				assert.Equal(t, tc.want.contentType, resp.Header.Get("Content-Type"))
-			}
-
-			if tc.want.expectCookie {
-				cookies := resp.Cookies()
-				var userCookie *http.Cookie
-
-				for _, cookie := range cookies {
-					if cookie.Name == "user_id" {
-						userCookie = cookie
-					}
-				}
-
-				require.NotNil(t, userCookie)
-				assert.NotEmpty(t, userCookie)
 			}
 
 			assert.Equal(t, tc.want.status, resp.StatusCode)
@@ -273,6 +283,7 @@ func TestGetUrl(t *testing.T) {
 		method string
 		urlSrc string
 		id     string
+		userId string
 		want   want
 	}{
 		{
@@ -280,6 +291,7 @@ func TestGetUrl(t *testing.T) {
 			method: http.MethodGet,
 			urlSrc: "http://mysite.loc/",
 			id:     "QdYD7GY5",
+			userId: "qwerty777",
 			want: want{
 				contentType: "plain/text",
 				status:      http.StatusTemporaryRedirect,
@@ -289,6 +301,7 @@ func TestGetUrl(t *testing.T) {
 		{
 			name:   "Case #2 Not Found",
 			method: http.MethodGet,
+			userId: "qwerty778",
 			want: want{
 				status: http.StatusNotFound,
 			},
@@ -297,10 +310,6 @@ func TestGetUrl(t *testing.T) {
 
 	cfg, err := config.New()
 	require.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-
-	defer cancel()
 
 	logger, err := logger.InitZap("debug")
 	require.NoError(t, err)
@@ -317,7 +326,7 @@ func TestGetUrl(t *testing.T) {
 
 			require.NoError(t, err)
 
-			err = store.CreateUrl(ctx, m)
+			err = store.CreateUrl(context.Background(), m)
 			require.NoError(t, err)
 		}
 
@@ -327,6 +336,12 @@ func TestGetUrl(t *testing.T) {
 			// использую результат короткого отправляю запрос на GET
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", tc.id), nil)
 			r.SetPathValue("id", tc.id)
+
+			ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
+			ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+
+			r = r.WithContext(ctx)
+
 			w := httptest.NewRecorder()
 
 			h.GetUrl(w, r)
@@ -363,6 +378,7 @@ func TestGetUrls(t *testing.T) {
 		name   string
 		method string
 		urlSrc []urlsSrc
+		userId string
 		want   want
 	}{
 		{
@@ -378,6 +394,7 @@ func TestGetUrls(t *testing.T) {
 					OriginalUrl:   "http://mysite2.loc",
 				},
 			},
+			userId: "qwerty12",
 			want: want{
 				contentType: "application/json",
 				status:      http.StatusCreated,
@@ -393,15 +410,21 @@ func TestGetUrls(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-		body, err := json.Marshal(tc.urlSrc)
-		require.NoError(t, err)
 
-		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
-		w := httptest.NewRecorder()
 		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		body, err := json.Marshal(tc.urlSrc)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
+		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+		r = r.WithContext(ctx)
+
+		w := httptest.NewRecorder()
 
 		h.GetShortenUrls(w, r)
 

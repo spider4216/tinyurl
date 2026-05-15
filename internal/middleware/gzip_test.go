@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -18,7 +19,7 @@ func TestGzip(t *testing.T) {
 	zap, _ := zap.NewDevelopment()
 	logger := zap.Sugar()
 
-	m := New(logger)
+	m := New(logger, &config.Config{})
 
 	handler := m.Gzip(http.HandlerFunc(fakeHandler))
 	srv := httptest.NewServer(handler)

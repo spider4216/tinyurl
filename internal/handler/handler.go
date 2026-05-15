@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
 	"go.uber.org/zap"
@@ -57,23 +55,21 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
+	ctx := r.Context()
+
+	isCookieValid, ok := ctx.Value(middleware.IsSignValidKey).(bool)
+
+	if !ok {
+		h.logger.Error("cannot conver user id to string")
 		return
 	}
 
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			// Если  токен не валидный, нет смысла ходить в БД и удалять
-			// записи, поскольку таковых не будет
-			h.logger.Error("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+	if !isCookieValid {
+		// Если  токен не валидный, нет смысла ходить в БД и удалять
+		// записи, поскольку таковых не будет
+		h.logger.Error("Unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 
 	if len(req) <= 0 {
@@ -82,7 +78,14 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.WithoutCancel(context.Background())
+	ctx = context.WithoutCancel(ctx)
+
+	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+
+	if !ok {
+		h.logger.Error("cannot conver user id to string")
+		return
+	}
 
 	go h.service.DeleteBatchAsync(ctx, req, userId)
 
@@ -101,7 +104,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -120,23 +123,11 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	userId, ok := ctx.Value(middleware.UserIdKey).(string)
 
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			// По требованию если токен не валидный, устанавливаем новый
-			// Делаем новый userId
-			userId = uuid.NewString()
-			// Устанавливаем новую куку
-			needSetCookie = true
-		}
+	if !ok {
+		h.logger.Error("cannot convert user id to string")
+		return
 	}
 
 	urls := h.service.MapForMapUrlIds(req, userId)
@@ -152,21 +143,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("cannot marshall", zap.Error(err))
 		return
-	}
-
-	if needSetCookie {
-		h.logger.Debug("Set cookie")
-
-		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			h.logger.Error("cannot sign user id")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		cookie := h.createCookie(userId, uidSign)
-
-		http.SetCookie(w, &cookie)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -188,7 +164,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -209,23 +185,11 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	userId, ok := ctx.Value(middleware.UserIdKey).(string)
 
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			// По требованию если токен не валидный, устанавливаем новый
-			// Делаем новый userId
-			userId = uuid.NewString()
-			// Устанавливаем новую куку
-			needSetCookie = true
-		}
+	if !ok {
+		h.logger.Error("cannot convert user id to string")
+		return
 	}
 
 	err = h.service.StoreData(ctx, id, string(req.Url), userId)
@@ -261,21 +225,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if needSetCookie {
-		h.logger.Debug("Set cookie")
-
-		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			h.logger.Error("cannot sign user id")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		cookie := h.createCookie(userId, uidSign)
-
-		http.SetCookie(w, &cookie)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -295,26 +244,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			// По требованию если токен не валидный, устанавливаем новый
-			// Делаем новый userId
-			userId = uuid.NewString()
-			// Устанавливаем новую куку
-			needSetCookie = true
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -332,6 +262,13 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := h.service.GenerateId()
+
+	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+
+	if !ok {
+		h.logger.Error("cannot conver user id to string")
+		return
+	}
 
 	err = h.service.StoreData(ctx, id, string(url), userId)
 
@@ -358,20 +295,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "plain/text")
 
-	if needSetCookie {
-		h.logger.Debug("Set cookie")
-		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			h.logger.Error("cannot sign user id")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		cookie := h.createCookie(userId, uidSign)
-
-		http.SetCookie(w, &cookie)
-	}
-
 	w.WriteHeader(status)
 
 	if _, err := w.Write([]byte(full)); err != nil {
@@ -389,26 +312,7 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			// По требованию если токен не валидный, устанавливаем новый
-			// Делаем новый userId
-			userId = uuid.NewString()
-			// Устанавливаем новую куку
-			needSetCookie = true
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -444,27 +348,13 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if needSetCookie {
-		h.logger.Debug("Set cookie")
-		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			h.logger.Error("cannot sign user id")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		cookie := h.createCookie(userId, uidSign)
-
-		http.SetCookie(w, &cookie)
-	}
-
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -477,24 +367,26 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, needSetCookie, sign, err := h.authCookie(r)
-	if err != nil {
-		h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
+	isValid, ok := ctx.Value(middleware.IsSignValidKey).(bool)
+
+	if !ok {
+		h.logger.Error("cannot conver is valid cookie to bool")
 		return
 	}
 
-	h.logger.Debug("extracted user id is ", userId)
-
 	// Если кука пришла, то нужно ее провалидировать
-	if !needSetCookie {
-		h.logger.Debug("Validate user...")
+	if !isValid {
 
-		if err := h.service.ValidateSign(userId, h.conf.SignKey, sign); err != nil {
-			h.logger.Error("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+		h.logger.Error("Unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+
+	if !ok {
+		h.logger.Error("cannot conver user id to string")
+		return
 	}
 
 	urls, err := h.service.GetUrlsByUserId(ctx, userId, h.conf.BaseUrl)
@@ -508,21 +400,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 	if len(urls) <= 0 {
 		h.logger.Debug("No items for user ", userId)
-		// По требованию если нету urls, то выдаем новую куку
-		userId = uuid.NewString()
-		// Устанавливаем новую куку
-		h.logger.Debug("Set cookie")
-		uidSign, err := h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			h.logger.Error("cannot sign user id")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		cookie := h.createCookie(userId, uidSign)
-
-		http.SetCookie(w, &cookie)
-
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -555,55 +432,4 @@ func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	h.logger.Info("Ping store OK")
-}
-
-func (h Handler) authCookie(r *http.Request) (userId string, needSet bool, sign string, err error) {
-	authCookie, err := r.Cookie("user_id")
-
-	if err != nil {
-		// Если ошибка и она не связана с ErrNoCookie, то останавливаемся
-		if err != http.ErrNoCookie {
-			h.logger.Error("something went wrong while getting cookie", zap.Error(err))
-			return
-		}
-
-		// Если куки просто нет, то генерируем новый User ID
-		userId = uuid.NewString()
-		// Перед позитивным ответом, нужно установить новую куку
-		needSet = true
-
-		// Подписываем новый идентификатор
-		sign, err = h.service.SignVal(userId, h.conf.SignKey)
-		if err != nil {
-			return
-		}
-	} else {
-		// Кука существует, извлекаем из нее ID пользователя
-		sig := authCookie.Value
-
-		// Получаем отдельно ID и отдельно подпись
-		parts := strings.Split(sig, ".")
-
-		if len(parts) < 2 {
-			err = errors.New("cannot get cookie parts")
-			return
-		}
-
-		userId = parts[0]
-		sign = parts[1]
-	}
-
-	return
-}
-
-func (h Handler) createCookie(userId string, sign string) http.Cookie {
-	return http.Cookie{
-		Name:     "user_id",
-		Value:    userId + "." + sign,
-		Path:     "/",
-		Expires:  time.Now().Add(h.conf.CookieTTL),
-		HttpOnly: true,                 // Protects against XSS
-		Secure:   true,                 // Only sent over HTTPS
-		SameSite: http.SameSiteLaxMode, // CSRF protection
-	}
 }

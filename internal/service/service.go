@@ -2,11 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -137,43 +134,4 @@ func (s Service) IsErrAsDuplicate(err error) bool {
 	}
 
 	return pgErr.Code == pgerrcode.UniqueViolation
-}
-
-// Подпись строки
-func (s Service) SignVal(val string, key string) (string, error) {
-	h := hmac.New(sha256.New, []byte(key))
-
-	if _, err := h.Write([]byte(val)); err != nil {
-		return "", err
-	}
-
-	sign := h.Sum(nil)
-
-	return hex.EncodeToString(sign), nil
-}
-
-func (s Service) ValidateSign(val string, key string, sig string) error {
-	// Подписываем ключ
-	m, err := s.SignVal(val, key)
-	if err != nil {
-		return err
-	}
-
-	// Декодим и получаем байты
-	src, err := hex.DecodeString(m)
-	if err != nil {
-		return err
-	}
-
-	// Декодим подпись которую нужно проверить
-	dst, err := hex.DecodeString(sig)
-	if err != nil {
-		return err
-	}
-
-	if hmac.Equal(src, dst) {
-		return nil
-	}
-
-	return errors.New("invalid signature")
 }
