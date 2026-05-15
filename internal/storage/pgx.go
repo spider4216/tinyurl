@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -180,4 +181,41 @@ func (db *PgxStorage) DeleteBatch(ctx context.Context, ids []string, userId stri
 	_, err := db.Con.ExecContext(ctx, sql, ids, userId)
 
 	return err
+}
+
+func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	rows, err := db.Con.QueryContext(ctx, "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			db.logger.Warn("Cannot close rows", zap.Error(err))
+		}
+	}()
+
+	var items []models.UrlItem
+
+	for rows.Next() {
+		var item models.UrlItem
+
+		if err := rows.Scan(
+			&item.ShortUrl,
+			&item.OriginarUrl,
+			&item.UserId,
+			&item.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

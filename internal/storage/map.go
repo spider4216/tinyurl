@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 	"sync"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
 type MapStorage struct {
@@ -134,4 +137,62 @@ func (ms *MapStorage) DeleteBatch(ctx context.Context, ids []string, userId stri
 	}
 
 	return nil
+}
+
+func (ms *MapStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	var urls []models.UrlItem
+
+	for _, item := range ms.store {
+		line := map[string]string{}
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return nil, err
+		}
+
+		uid, ok := line["user_id"]
+
+		if !ok {
+			continue
+		}
+
+		if uid != userId {
+			continue
+		}
+
+		short, ok := line["short_url"]
+
+		if !ok {
+			continue
+		}
+
+		isDeleted, ok := line["is_deleted"]
+
+		if !ok {
+			continue
+		}
+
+		b, err := strconv.ParseBool(isDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		orig, ok := line["original_url"]
+
+		if !ok {
+			continue
+		}
+
+		urls = append(urls, models.UrlItem{
+			OriginarUrl: orig,
+			ShortUrl:    short,
+			IsDeleted:   b,
+			UserId:      userId,
+		})
+	}
+
+	return urls, nil
 }

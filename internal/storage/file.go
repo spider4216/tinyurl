@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"sync"
 
+	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -204,4 +206,74 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 	fs.file = file
 
 	return nil
+}
+
+func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// Вернуть курсор вначало
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(fs.file)
+
+	var urls []models.UrlItem
+
+	for scanner.Scan() {
+		item := map[string]string{}
+
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			continue
+		}
+
+		uid, ok := item["user_id"]
+
+		if !ok {
+			continue
+		}
+
+		if uid != userId {
+			continue
+		}
+
+		short, ok := item["short_url"]
+
+		if !ok {
+			continue
+		}
+
+		isDeleted, ok := item["is_deleted"]
+
+		if !ok {
+			continue
+		}
+
+		b, err := strconv.ParseBool(isDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		orig, ok := item["original_url"]
+
+		if !ok {
+			continue
+		}
+
+		urls = append(urls, models.UrlItem{
+			OriginarUrl: orig,
+			ShortUrl:    short,
+			IsDeleted:   b,
+			UserId:      userId,
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return urls, nil
+
 }

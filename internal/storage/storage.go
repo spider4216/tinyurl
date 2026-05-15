@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +23,7 @@ type Storage interface {
 	Source() any
 	StoreName() string
 	DeleteBatch(ctx context.Context, ids []string, userId string) error
+	GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error)
 }
 
 type Iterator interface {

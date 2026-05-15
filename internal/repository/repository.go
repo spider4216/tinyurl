@@ -128,33 +128,5 @@ func (r *Repository) Ping(ctx context.Context) error {
 }
 
 func (r *Repository) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
-	rows, err := r.store.Load(ctx)
-
-	var urls []models.UrlItem
-
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		item, err := rows.Row()
-		if err != nil {
-			return nil, err
-		}
-
-		rec := record{}
-
-		if err := json.Unmarshal([]byte(item), &rec); err != nil {
-			continue
-		}
-
-		if rec.UserId == userId {
-			urls = append(urls, models.UrlItem{
-				OriginarUrl: rec.OriginalUrl,
-				ShortUrl:    rec.ShortUrl,
-			})
-		}
-	}
-
-	return urls, nil
+	return r.store.GetByUserId(ctx, userId)
 }
