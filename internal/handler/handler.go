@@ -30,16 +30,6 @@ type Handler struct {
 }
 
 func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(lr)
@@ -94,16 +84,6 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
@@ -154,16 +134,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
@@ -234,16 +204,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
@@ -303,15 +263,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
@@ -358,15 +309,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
 	isValid, ok := ctx.Value(middleware.IsSignValidKey).(bool)
 
 	if !ok {
@@ -376,7 +318,6 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 	// Если кука пришла, то нужно ее провалидировать
 	if !isValid {
-
 		h.logger.Error("Unauthorized")
 		w.WriteHeader(http.StatusUnauthorized)
 		return

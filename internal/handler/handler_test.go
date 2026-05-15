@@ -63,16 +63,6 @@ func TestGetShortenUrl(t *testing.T) {
 				status:      http.StatusCreated,
 			},
 		},
-		{
-			name:   "Case #2 Method Not Allowed",
-			method: http.MethodGet,
-			urlTo:  "/",
-			urlSrc: "http://mysite.loc/",
-			userId: "qwerty2",
-			want: want{
-				status: http.StatusMethodNotAllowed,
-			},
-		},
 	}
 
 	cfg, err := config.New()
@@ -155,16 +145,6 @@ func TestGenerateId(t *testing.T) {
 			want: want{
 				contentType: "plain/text",
 				status:      http.StatusCreated,
-			},
-		},
-		{
-			name:   "Case #2 Method Not Allowed",
-			method: http.MethodGet,
-			urlTo:  "/",
-			urlSrc: "http://mysite.loc/",
-			userId: "qwerty7",
-			want: want{
-				status: http.StatusMethodNotAllowed,
 			},
 		},
 	}
