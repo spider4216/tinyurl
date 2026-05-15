@@ -5,13 +5,17 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
+	"net/url"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"go.uber.org/zap"
+)
+
+const (
+	ChankSize = 2
 )
 
 func New(repo *repository.Repository, logger *zap.SugaredLogger) Service {
@@ -51,7 +55,7 @@ func (s Service) DeleteBatch(ctx context.Context, ids []string, userId string) e
 
 func (s Service) DeleteBatchAsync(ctx context.Context, ids []string, userId string) {
 	// канал с данными
-	inputCh := s.GenerateChunk(ids, 2, userId)
+	inputCh := s.GenerateChunk(ids, ChankSize, userId)
 
 	// получаем слайс каналов
 	channels := s.FanOutDeleteBatch(ctx, inputCh)
@@ -116,7 +120,13 @@ func (s Service) GetUrlsByUserId(ctx context.Context, userId string, baseUrl str
 	}
 
 	for i := range items {
-		items[i].ShortUrl = fmt.Sprintf("%s/%s", baseUrl, items[i].ShortUrl)
+		fullUrl, err := url.JoinPath(baseUrl, items[i].ShortUrl)
+
+		if err != nil {
+			return nil, err
+		}
+
+		items[i].ShortUrl = fullUrl
 	}
 
 	return items, nil
