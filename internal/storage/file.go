@@ -347,3 +347,34 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Ur
 
 	return nil, errors.New("cannot find url")
 }
+
+func (fs *FileStorage) CreateUrl(ctx context.Context, data models.InsertData) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	item := recordFile{
+		Origin:    data.Value,
+		Short:     data.Key,
+		UserId:    data.UserId,
+		IsDeleted: "false",
+	}
+
+	b, err := json.Marshal(item)
+
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in file save")
+	default:
+		b = append(b, '\n')
+
+		if _, err := fs.file.Write(b); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}

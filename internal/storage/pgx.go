@@ -279,3 +279,11 @@ func (db *PgxStorage) GetByShort(ctx context.Context, short string) (*models.Url
 		IsDeleted:   item.IsDeleted,
 	}, nil
 }
+
+func (db *PgxStorage) CreateUrl(ctx context.Context, data models.InsertData) error {
+	sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+	_, err := db.Con.ExecContext(ctx, sql, data.Key, data.Value, data.UserId)
+
+	return err
+}

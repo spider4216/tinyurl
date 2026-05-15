@@ -26,6 +26,7 @@ type Storage interface {
 	GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error)
 	GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error)
 	GetByShort(ctx context.Context, origin string) (*models.UrlItem, error)
+	CreateUrl(ctx context.Context, data models.InsertData) error
 }
 
 type Iterator interface {
@@ -45,7 +46,7 @@ func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage,
 
 		return fileStore, nil
 	case MapDriver:
-		mapStore := NewMapStorage()
+		mapStore := NewMapStorage(logger)
 		return mapStore, nil
 	case PostgresDriver:
 		pgxStore, err := NewPgxStorage(cfg.DbDsn, logger)

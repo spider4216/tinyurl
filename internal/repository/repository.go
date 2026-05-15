@@ -54,20 +54,7 @@ func (r *Repository) InsertBatch(ctx context.Context, items []models.InsertData)
 }
 
 func (r *Repository) Insert(ctx context.Context, data models.InsertData) error {
-	raw := map[string]string{
-		"uuid":         data.Key,
-		"short_url":    data.Key,
-		"original_url": data.Value,
-		"user_id":      data.UserId,
-		"is_deleted":   "false",
-	}
-
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return err
-	}
-
-	return r.store.Save(ctx, b)
+	return r.store.CreateUrl(ctx, data)
 }
 
 func (r *Repository) GetByShort(ctx context.Context, k string) (*models.UrlItem, error) {

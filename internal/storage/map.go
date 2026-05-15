@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/spider4216/tinyurl/internal/models"
+	"go.uber.org/zap"
 )
 
 type recordSlice struct {
@@ -20,13 +21,15 @@ type recordSlice struct {
 }
 
 type MapStorage struct {
-	store []string
-	mu    sync.RWMutex
+	store  []string
+	mu     sync.RWMutex
+	logger *zap.SugaredLogger
 }
 
-func NewMapStorage() *MapStorage {
+func NewMapStorage(logger *zap.SugaredLogger) *MapStorage {
 	return &MapStorage{
-		store: []string{},
+		store:  []string{},
+		logger: logger,
 	}
 }
 
@@ -243,4 +246,33 @@ func (ms *MapStorage) GetByShort(ctx context.Context, short string) (*models.Url
 	}
 
 	return nil, errors.New("cannot find url")
+}
+
+func (ms *MapStorage) CreateUrl(ctx context.Context, data models.InsertData) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	item := recordSlice{
+		Origin:    data.Value,
+		Short:     data.Key,
+		UserId:    data.UserId,
+		IsDeleted: "false",
+	}
+
+	b, err := json.Marshal(item)
+
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("timeout in slice save")
+	default:
+		ms.store = append(ms.store, string(b))
+	}
+
+	ms.logger.Debug("Added, now store: ", ms.store)
+
+	return nil
 }

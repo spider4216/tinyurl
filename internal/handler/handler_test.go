@@ -311,7 +311,6 @@ func TestGetUrl(t *testing.T) {
 
 		if tc.urlSrc != "" {
 			m := map[string]string{
-				"uuid":         tc.id,
 				"original_url": tc.urlSrc,
 				"short_url":    tc.id,
 				"is_deleted":   "false",
