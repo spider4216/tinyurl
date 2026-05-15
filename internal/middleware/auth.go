@@ -14,9 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type (
+	UserIdKey      string
+	IsSignValidKey string
+)
+
 const (
-	UserIdKey      = "user_id"
-	IsSignValidKey = "is_sign_valid"
+	UserKey      UserIdKey      = "user_id"
+	ValidSignKey IsSignValidKey = "is_sign_valid"
 )
 
 func (m Middleware) WithAuth(h http.Handler) http.Handler {
@@ -29,7 +34,7 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 			// Если ошибка и она не связана с ErrNoCookie, то останавливаемся
 			if err != http.ErrNoCookie {
 				m.logger.Error("something went wrong while getting cookie", zap.Error(err))
-				h.ServeHTTP(w, r)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
@@ -41,6 +46,8 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 			// Подписываем новый идентификатор
 			sign, err = m.signVal(userId, m.cfg.SignKey)
 			if err != nil {
+				m.logger.Error("cannot sign cookie", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
@@ -51,8 +58,8 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 			m.logger.Debug("Set user_id and sign validate result to ctx ", userId, true)
 
 			// Устанавливаем user ID в контекст
-			ctx := context.WithValue(r.Context(), UserIdKey, userId)
-			ctx = context.WithValue(ctx, IsSignValidKey, true)
+			ctx := context.WithValue(r.Context(), UserKey, userId)
+			ctx = context.WithValue(ctx, ValidSignKey, true)
 
 			// создаем новый request с обновленным контекстом
 			r = r.WithContext(ctx)
@@ -70,7 +77,8 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 		parts := strings.Split(sig, ".")
 
 		if len(parts) < 2 {
-			err = errors.New("cannot get cookie parts")
+			m.logger.Error("Something went wrong while getting cookies")
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -89,11 +97,11 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 		m.logger.Debug("Cookie validation result ", isValid)
 
 		// Устанавливаем user ID в контекст
-		ctx := context.WithValue(r.Context(), UserIdKey, userId)
+		ctx := context.WithValue(r.Context(), UserKey, userId)
 		// Поскольку по требованию инкрементов, некоторые эндпоинты должны
 		// пропускать невалидность, устанавливаем флаг валидности куки
 		// в контекст и делегируем поведение невалидности обработчикам
-		ctx = context.WithValue(ctx, IsSignValidKey, isValid)
+		ctx = context.WithValue(ctx, ValidSignKey, isValid)
 
 		// создаем новый request с обновленным контекстом
 		r = r.WithContext(ctx)

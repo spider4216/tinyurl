@@ -85,8 +85,8 @@ func TestGetShortenUrl(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
 
 		r = r.WithContext(ctx)
 
@@ -163,8 +163,8 @@ func TestGenerateId(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
 
 		r = r.WithContext(ctx)
 
@@ -196,9 +196,8 @@ func TestGenerateId(t *testing.T) {
 
 func TestUrls(t *testing.T) {
 	type want struct {
-		contentType  string
-		status       int
-		expectCookie bool
+		contentType string
+		status      int
 	}
 
 	cases := []struct {
@@ -232,8 +231,8 @@ func TestUrls(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
 
 		r = r.WithContext(ctx)
 
@@ -317,8 +316,8 @@ func TestGetUrl(t *testing.T) {
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", tc.id), nil)
 			r.SetPathValue("id", tc.id)
 
-			ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
-			ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+			ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
+			ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
 
 			r = r.WithContext(ctx)
 
@@ -390,7 +389,6 @@ func TestGetUrls(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-
 		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
@@ -400,8 +398,8 @@ func TestGetUrls(t *testing.T) {
 		require.NoError(t, err)
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
-		ctx := context.WithValue(r.Context(), middleware.UserIdKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.IsSignValidKey, true)
+		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
+		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
 		r = r.WithContext(ctx)
 
 		w := httptest.NewRecorder()

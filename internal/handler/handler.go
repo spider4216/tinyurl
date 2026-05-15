@@ -50,7 +50,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	isCookieValid, ok := ctx.Value(middleware.IsSignValidKey).(bool)
+	isCookieValid, ok := ctx.Value(middleware.ValidSignKey).(bool)
 
 	if !ok {
 		h.logger.Error("cannot conver user id to string")
@@ -73,7 +73,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 
 	ctx = context.WithoutCancel(ctx)
 
-	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+	userId, ok := ctx.Value(middleware.UserKey).(string)
 
 	if !ok {
 		h.logger.Error("cannot conver user id to string")
@@ -128,7 +128,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+	userId, ok := ctx.Value(middleware.UserKey).(string)
 
 	if !ok {
 		h.logger.Error("cannot convert user id to string")
@@ -181,7 +181,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+	userId, ok := ctx.Value(middleware.UserKey).(string)
 
 	if !ok {
 		h.logger.Error("cannot convert user id to string")
@@ -245,7 +245,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+	userId, ok := ctx.Value(middleware.UserKey).(string)
 
 	if !ok {
 		h.logger.Error("cannot conver user id to string")
@@ -331,7 +331,7 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	isValid, ok := ctx.Value(middleware.IsSignValidKey).(bool)
+	isValid, ok := ctx.Value(middleware.ValidSignKey).(bool)
 
 	if !ok {
 		h.logger.Error("cannot conver is valid cookie to bool")
@@ -345,7 +345,7 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := ctx.Value(middleware.UserIdKey).(string)
+	userId, ok := ctx.Value(middleware.UserKey).(string)
 
 	if !ok {
 		h.logger.Error("cannot conver user id to string")
