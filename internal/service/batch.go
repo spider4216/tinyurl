@@ -44,6 +44,8 @@ func (s Service) WorkChunkDelete(ctx context.Context, in <-chan BatchJob) chan B
 	out := make(chan BatchResult)
 
 	go func() {
+		defer close(out)
+
 		for data := range in {
 			s.logger.Debug("Delete batch with chunk ", data.IDs)
 			err := s.DeleteBatch(ctx, data.IDs, data.UserId)

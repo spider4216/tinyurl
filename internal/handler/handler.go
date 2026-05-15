@@ -17,16 +17,18 @@ import (
 
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
-		conf:    conf,
-		service: service,
-		logger:  logger,
+		conf:         conf,
+		service:      service,
+		logger:       logger,
+		delSemaphore: make(chan struct{}, conf.DeleteMaxPool),
 	}
 }
 
 type Handler struct {
-	conf    *config.Config
-	service service.Service
-	logger  *zap.SugaredLogger
+	conf         *config.Config
+	service      service.Service
+	logger       *zap.SugaredLogger
+	delSemaphore chan struct{}
 }
 
 func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
@@ -79,8 +81,30 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.service.DeleteBatchAsync(ctx, req, userId)
+	// Реализация паттерна Семафора, ограничиваем
+	// кол-во задач на удаление
+	select {
+	case h.delSemaphore <- struct{}{}:
+		go func() {
+			defer func() {
+				<-h.delSemaphore
+				h.logger.Debug("Release task for delete. Left: ", len(h.delSemaphore))
+			}()
+			h.logger.Debug("Push task for delete. Left: ", len(h.delSemaphore))
+			h.service.DeleteBatchAsync(ctx, req, userId)
 
+		}()
+	default:
+		// Поскольку эндпоинт должен возвращать сразу же HTTP 202
+		// Если превышен лимит запросов, то выводим ошибку
+		// HTTP 429
+		h.logger.Error("Too many tasks for delete. Try again later")
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
+	}
+
+	// По требованию к задаче, эндпоинт должен синхронно возвращать
+	// 202 Accepted OK
 	h.logger.Debug("Accepted OK")
 	w.WriteHeader(http.StatusAccepted)
 }

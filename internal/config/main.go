@@ -21,6 +21,7 @@ type Config struct {
 	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048"`
 	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h"`
 	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty"` // Ключ для подписи значения куки
+	DeleteMaxPool int           `env:"DEL_MAP_POOL" envDefault:"10"` // Кол-во одновременно вып-мых задач на удаление
 }
 
 func New() (*Config, error) {
