@@ -56,7 +56,6 @@ func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1"
 
 	rows, err := db.Con.QueryContext(ctx, sql, userId)
-
 	if err != nil {
 		return nil, err
 	}

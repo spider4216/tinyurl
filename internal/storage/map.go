@@ -102,7 +102,6 @@ func (ms *MapStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 		}
 
 		b, err := strconv.ParseBool(line.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +133,6 @@ func (ms *MapStorage) GetByOrigin(ctx context.Context, origin string) (*models.U
 		}
 
 		b, err := strconv.ParseBool(line.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +164,6 @@ func (ms *MapStorage) GetByShort(ctx context.Context, short string) (*models.Url
 		}
 
 		b, err := strconv.ParseBool(line.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +191,6 @@ func (ms *MapStorage) CreateUrl(ctx context.Context, data models.InsertData) err
 	}
 
 	b, err := json.Marshal(item)
-
 	if err != nil {
 		return err
 	}

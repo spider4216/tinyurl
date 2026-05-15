@@ -35,7 +35,6 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
@@ -92,7 +91,6 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 			}()
 			h.logger.Debug("Push task for delete. Left: ", len(h.delSemaphore))
 			h.service.DeleteBatchAsync(ctx, req, userId)
-
 		}()
 	default:
 		// Поскольку эндпоинт должен возвращать сразу же HTTP 202
@@ -117,7 +115,6 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
@@ -169,7 +166,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
 	body, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
@@ -241,7 +237,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
 	url, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)

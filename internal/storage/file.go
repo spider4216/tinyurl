@@ -170,7 +170,6 @@ func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models
 		}
 
 		b, err := strconv.ParseBool(item.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +187,6 @@ func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models
 	}
 
 	return urls, nil
-
 }
 
 func (fs *FileStorage) GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error) {
@@ -214,7 +212,6 @@ func (fs *FileStorage) GetByOrigin(ctx context.Context, origin string) (*models.
 		}
 
 		b, err := strconv.ParseBool(item.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +254,6 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Ur
 		}
 
 		b, err := strconv.ParseBool(item.IsDeleted)
-
 		if err != nil {
 			return nil, err
 		}
@@ -289,7 +285,6 @@ func (fs *FileStorage) CreateUrl(ctx context.Context, data models.InsertData) er
 	}
 
 	b, err := json.Marshal(item)
-
 	if err != nil {
 		return err
 	}

@@ -91,7 +91,6 @@ func (s Service) StoreDataBatch(ctx context.Context, urls []UrlsIds) error {
 
 func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 	item, err := s.repo.GetByShort(ctx, k)
-
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +104,6 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 
 func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error) {
 	item, err := s.repo.GetByOrigin(ctx, v)
-
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +119,6 @@ func (s Service) GetUrlsByUserId(ctx context.Context, userId string, baseUrl str
 
 	for i := range items {
 		fullUrl, err := url.JoinPath(baseUrl, items[i].ShortUrl)
-
 		if err != nil {
 			return nil, err
 		}
