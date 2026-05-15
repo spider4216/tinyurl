@@ -30,11 +30,13 @@ type Handler struct {
 }
 
 func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
-	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	body, err := io.ReadAll(lr)
+	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
-		h.logger.Error("failed to write response", zap.Error(err))
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -88,11 +90,13 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	body, err := io.ReadAll(lr)
+	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
-		h.logger.Error("failed to write response", zap.Error(err))
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -138,11 +142,13 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	body, err := io.ReadAll(lr)
+	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
-		h.logger.Error("failed to write response", zap.Error(err))
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -208,16 +214,13 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, h.conf.MaxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	url, err := io.ReadAll(lr)
+	url, err := io.ReadAll(r.Body)
+
 	if err != nil {
+		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
-
-		if _, err := w.Write([]byte("cannot read body")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
 		return
 	}
 
