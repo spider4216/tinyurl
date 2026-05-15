@@ -13,6 +13,13 @@ import (
 
 const Table = "urls"
 
+type recordPgx struct {
+	ShortUrl    string `json:"short_url"`
+	OriginarUrl string `json:"original_url"`
+	IsDeleted   bool   `json:"deleted_at"`
+	UserId      string `json:"user_id"`
+}
+
 type PgxStorage struct {
 	Con    *sql.DB
 	logger *zap.SugaredLogger
@@ -184,7 +191,9 @@ func (db *PgxStorage) DeleteBatch(ctx context.Context, ids []string, userId stri
 }
 
 func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
-	rows, err := db.Con.QueryContext(ctx, "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1")
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1"
+
+	rows, err := db.Con.QueryContext(ctx, sql)
 
 	if err != nil {
 		return nil, err
@@ -199,7 +208,7 @@ func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 	var items []models.UrlItem
 
 	for rows.Next() {
-		var item models.UrlItem
+		var item recordPgx
 
 		if err := rows.Scan(
 			&item.ShortUrl,
@@ -210,7 +219,12 @@ func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 			return nil, err
 		}
 
-		items = append(items, item)
+		items = append(items, models.UrlItem{
+			OriginarUrl: item.OriginarUrl,
+			ShortUrl:    item.ShortUrl,
+			UserId:      item.UserId,
+			IsDeleted:   item.IsDeleted,
+		})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -218,4 +232,27 @@ func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 	}
 
 	return items, nil
+}
+
+func (db *PgxStorage) GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error) {
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE original = $1"
+	row := db.Con.QueryRowContext(ctx, sql, origin)
+
+	var item recordPgx
+
+	if err := row.Scan(
+		&item.ShortUrl,
+		&item.OriginarUrl,
+		&item.UserId,
+		&item.IsDeleted,
+	); err != nil {
+		return nil, err
+	}
+
+	return &models.UrlItem{
+		OriginarUrl: item.OriginarUrl,
+		ShortUrl:    item.ShortUrl,
+		UserId:      item.UserId,
+		IsDeleted:   item.IsDeleted,
+	}, nil
 }

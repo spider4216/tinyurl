@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -30,6 +31,13 @@ func NewFileStorage(filename string, logger *zap.SugaredLogger) (*FileStorage, e
 		file:   file,
 		logger: logger,
 	}, nil
+}
+
+type recordFile struct {
+	Origin    string `json:"original_url"`
+	Short     string `json:"short_url"`
+	UserId    string `json:"user_id"`
+	IsDeleted string `json:"is_deleted"`
 }
 
 type FileIterator struct {
@@ -222,51 +230,27 @@ func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models
 	var urls []models.UrlItem
 
 	for scanner.Scan() {
-		item := map[string]string{}
+		var item recordFile
 
 		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
 			continue
 		}
 
-		uid, ok := item["user_id"]
-
-		if !ok {
+		if item.UserId != userId {
 			continue
 		}
 
-		if uid != userId {
-			continue
-		}
-
-		short, ok := item["short_url"]
-
-		if !ok {
-			continue
-		}
-
-		isDeleted, ok := item["is_deleted"]
-
-		if !ok {
-			continue
-		}
-
-		b, err := strconv.ParseBool(isDeleted)
+		b, err := strconv.ParseBool(item.IsDeleted)
 
 		if err != nil {
 			return nil, err
 		}
 
-		orig, ok := item["original_url"]
-
-		if !ok {
-			continue
-		}
-
 		urls = append(urls, models.UrlItem{
-			OriginarUrl: orig,
-			ShortUrl:    short,
+			OriginarUrl: item.Origin,
+			ShortUrl:    item.Short,
 			IsDeleted:   b,
-			UserId:      userId,
+			UserId:      item.UserId,
 		})
 	}
 
@@ -275,5 +259,49 @@ func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models
 	}
 
 	return urls, nil
+
+}
+
+func (fs *FileStorage) GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// Вернуть курсор вначало
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(fs.file)
+
+	for scanner.Scan() {
+		var item recordFile
+
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			continue
+		}
+
+		if item.Origin != origin {
+			continue
+		}
+
+		b, err := strconv.ParseBool(item.IsDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &models.UrlItem{
+			OriginarUrl: item.Origin,
+			ShortUrl:    item.Short,
+			IsDeleted:   b,
+			UserId:      item.UserId,
+		}, nil
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New("cannot find url")
 
 }

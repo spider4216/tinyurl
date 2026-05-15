@@ -131,24 +131,12 @@ func (s Service) GetUrl(ctx context.Context, k string) (string, error) {
 
 func (s Service) GetShortByOrigin(ctx context.Context, v string) (string, error) {
 	item, err := s.repo.GetByValue(ctx, v)
+
 	if err != nil {
 		return "", err
 	}
 
-	itemMap := map[string]string{}
-
-	err = json.Unmarshal([]byte(item), &itemMap)
-	if err != nil {
-		return "", err
-	}
-
-	url, ok := itemMap["short_url"]
-
-	if !ok {
-		return "", fmt.Errorf("cannot get short url from map")
-	}
-
-	return url, nil
+	return item.ShortUrl, nil
 }
 
 func (s Service) GetUrlsByUserId(ctx context.Context, userId string, baseUrl string) ([]models.UrlItem, error) {

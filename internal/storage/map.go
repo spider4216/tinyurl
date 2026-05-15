@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -10,6 +11,13 @@ import (
 
 	"github.com/spider4216/tinyurl/internal/models"
 )
+
+type recordSlice struct {
+	Origin    string `json:"original_url"`
+	Short     string `json:"short_url"`
+	UserId    string `json:"user_id"`
+	IsDeleted string `json:"is_deleted"`
+}
 
 type MapStorage struct {
 	store []string
@@ -146,53 +154,61 @@ func (ms *MapStorage) GetByUserId(ctx context.Context, userId string) ([]models.
 	var urls []models.UrlItem
 
 	for _, item := range ms.store {
-		line := map[string]string{}
+		var line recordSlice
 
 		if err := json.Unmarshal([]byte(item), &line); err != nil {
 			return nil, err
 		}
 
-		uid, ok := line["user_id"]
-
-		if !ok {
+		if line.UserId != userId {
 			continue
 		}
 
-		if uid != userId {
-			continue
-		}
-
-		short, ok := line["short_url"]
-
-		if !ok {
-			continue
-		}
-
-		isDeleted, ok := line["is_deleted"]
-
-		if !ok {
-			continue
-		}
-
-		b, err := strconv.ParseBool(isDeleted)
+		b, err := strconv.ParseBool(line.IsDeleted)
 
 		if err != nil {
 			return nil, err
 		}
 
-		orig, ok := line["original_url"]
-
-		if !ok {
-			continue
-		}
-
 		urls = append(urls, models.UrlItem{
-			OriginarUrl: orig,
-			ShortUrl:    short,
+			OriginarUrl: line.Origin,
+			ShortUrl:    line.Short,
 			IsDeleted:   b,
-			UserId:      userId,
+			UserId:      line.UserId,
 		})
 	}
 
 	return urls, nil
+}
+
+func (ms *MapStorage) GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	for _, item := range ms.store {
+		var line recordSlice
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return nil, err
+		}
+
+		if line.Origin != origin {
+			continue
+		}
+
+		b, err := strconv.ParseBool(line.IsDeleted)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &models.UrlItem{
+			OriginarUrl: line.Origin,
+			ShortUrl:    line.Short,
+			IsDeleted:   b,
+			UserId:      line.UserId,
+		}, nil
+	}
+
+	return nil, errors.New("cannot find url")
 }

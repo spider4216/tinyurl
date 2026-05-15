@@ -24,6 +24,7 @@ type Storage interface {
 	StoreName() string
 	DeleteBatch(ctx context.Context, ids []string, userId string) error
 	GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error)
+	GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error)
 }
 
 type Iterator interface {

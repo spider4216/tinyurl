@@ -97,30 +97,8 @@ func (r *Repository) Get(ctx context.Context, k string) (string, error) {
 	return "", errors.New("cannot found item")
 }
 
-func (r *Repository) GetByValue(ctx context.Context, v string) (string, error) {
-	rows, err := r.store.Load(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	for rows.Next() {
-		item, err := rows.Row()
-		if err != nil {
-			return "", err
-		}
-
-		rec := record{}
-
-		if err := json.Unmarshal([]byte(item), &rec); err != nil {
-			continue
-		}
-
-		if rec.OriginalUrl == v {
-			return string(item), nil
-		}
-	}
-
-	return "", errors.New("cannot found item")
+func (r *Repository) GetByValue(ctx context.Context, v string) (*models.UrlItem, error) {
+	return r.store.GetByOrigin(ctx, v)
 }
 
 func (r *Repository) Ping(ctx context.Context) error {
