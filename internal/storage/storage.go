@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -15,12 +16,15 @@ const (
 )
 
 type Storage interface {
-	Save(ctx context.Context, data []byte) error
-	SaveBatch(ctx context.Context, data [][]byte) error
-	Load(ctx context.Context) (Iterator, error)
 	Ping(ctx context.Context) error
 	Source() any
 	StoreName() string
+	DeleteBatch(ctx context.Context, ids []string, userId string) error
+	GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error)
+	GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error)
+	GetByShort(ctx context.Context, origin string) (*models.UrlItem, error)
+	CreateUrl(ctx context.Context, data models.InsertData) error
+	CreateUrls(ctx context.Context, data []models.InsertData) error
 }
 
 type Iterator interface {
@@ -33,14 +37,14 @@ type Iterator interface {
 func New(driver string, cfg *config.Config, logger *zap.SugaredLogger) (Storage, error) {
 	switch driver {
 	case FileDriver:
-		fileStore, err := NewFileStorage(cfg.FileStorePath)
+		fileStore, err := NewFileStorage(cfg.FileStorePath, logger)
 		if err != nil {
 			return nil, err
 		}
 
 		return fileStore, nil
 	case MapDriver:
-		mapStore := NewMapStorage()
+		mapStore := NewMapStorage(logger)
 		return mapStore, nil
 	case PostgresDriver:
 		pgxStore, err := NewPgxStorage(cfg.DbDsn, logger)

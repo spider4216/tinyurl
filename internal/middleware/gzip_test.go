@@ -10,6 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/repository"
+	"github.com/spider4216/tinyurl/internal/service"
+	"github.com/spider4216/tinyurl/internal/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -17,8 +21,13 @@ import (
 func TestGzip(t *testing.T) {
 	zap, _ := zap.NewDevelopment()
 	logger := zap.Sugar()
+	cfg := &config.Config{}
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+	require.NoError(t, err)
+	repo := repository.New(store)
+	service := service.New(repo, logger)
 
-	m := New(logger)
+	m := New(logger, cfg, service)
 
 	handler := m.Gzip(http.HandlerFunc(fakeHandler))
 	srv := httptest.NewServer(handler)

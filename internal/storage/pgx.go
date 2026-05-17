@@ -3,59 +3,24 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
 )
 
 const Table = "urls"
 
+type recordPgx struct {
+	ShortUrl    string `json:"short_url"`
+	OriginarUrl string `json:"original_url"`
+	IsDeleted   bool   `json:"deleted_at"`
+	UserId      string `json:"user_id"`
+}
+
 type PgxStorage struct {
 	Con    *sql.DB
 	logger *zap.SugaredLogger
-}
-
-type PGXIterator struct {
-	rows *sql.Rows
-}
-
-func (i *PGXIterator) Next() bool {
-	return i.rows.Next()
-}
-
-func (i *PGXIterator) Row() ([]byte, error) {
-	var short string
-	var origin string
-
-	err := i.rows.Scan(&short, &origin)
-	if err != nil {
-		return nil, err
-	}
-
-	// Здесь приходится декларировать контракт
-	// поскольку работаем с БД и нужно понимать поля
-	tmp := map[string]string{
-		"uuid":         short,
-		"short_url":    short,
-		"original_url": origin,
-	}
-
-	b, err := json.Marshal(tmp)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-func (i *PGXIterator) Err() error {
-	return i.rows.Err()
-}
-
-func (i *PGXIterator) Close() error {
-	return i.rows.Close()
 }
 
 func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
@@ -65,85 +30,6 @@ func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 	}
 
 	return &PgxStorage{Con: db, logger: logger}, nil
-}
-
-func (db *PgxStorage) SaveBatch(ctx context.Context, data [][]byte) error {
-	tx, err := db.Con.Begin()
-	if err != nil {
-		return err
-	}
-
-	for _, item := range data {
-		line := map[string]string{}
-
-		// Приходится делать unmarshal поскольку на уровне store нужно понимать
-		// схему таблицы
-		if err := json.Unmarshal(item, &line); err != nil {
-			return err
-		}
-
-		short, ok := line["short_url"]
-
-		if !ok {
-			return fmt.Errorf("unrecognize columns")
-		}
-
-		origin, ok := line["original_url"]
-
-		if !ok {
-			return fmt.Errorf("unrecognize columns")
-		}
-
-		sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
-
-		_, err := tx.ExecContext(ctx, sql, short, origin)
-		if err != nil {
-			if transErr := tx.Rollback(); transErr != nil {
-				return transErr
-			}
-
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
-func (db *PgxStorage) Save(ctx context.Context, data []byte) error {
-	vals := map[string]string{}
-
-	// Приходится делать unmarshal поскольку на уровне store нужно понимать
-	// схему таблицы
-	if err := json.Unmarshal(data, &vals); err != nil {
-		return err
-	}
-
-	short, ok := vals["short_url"]
-
-	if !ok {
-		return fmt.Errorf("unrecognize columns")
-	}
-
-	origin, ok := vals["original_url"]
-
-	if !ok {
-		return fmt.Errorf("unrecognize columns")
-	}
-
-	sql := "INSERT INTO urls (short, original) VALUES ($1, $2)"
-
-	_, err := db.Con.ExecContext(ctx, sql, short, origin)
-
-	return err
-}
-
-func (db *PgxStorage) Load(ctx context.Context) (Iterator, error) {
-	rows, err := db.Con.QueryContext(ctx, "SELECT short, original FROM urls")
-	if err != nil {
-		return nil, err
-	}
-
-	return &PGXIterator{rows: rows}, nil
 }
 
 func (db *PgxStorage) Ping(ctx context.Context) error {
@@ -156,4 +42,131 @@ func (db *PgxStorage) Source() any {
 
 func (db *PgxStorage) StoreName() string {
 	return PostgresDriver
+}
+
+func (db *PgxStorage) DeleteBatch(ctx context.Context, ids []string, userId string) error {
+	sql := "UPDATE urls SET is_deleted=TRUE WHERE short = ANY($1) AND user_id = $2"
+
+	_, err := db.Con.ExecContext(ctx, sql, ids, userId)
+
+	return err
+}
+
+func (db *PgxStorage) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE user_id = $1"
+
+	rows, err := db.Con.QueryContext(ctx, sql, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			db.logger.Warn("Cannot close rows", zap.Error(err))
+		}
+	}()
+
+	var items []models.UrlItem
+
+	for rows.Next() {
+		var item recordPgx
+
+		if err := rows.Scan(
+			&item.ShortUrl,
+			&item.OriginarUrl,
+			&item.UserId,
+			&item.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+
+		items = append(items, models.UrlItem{
+			OriginarUrl: item.OriginarUrl,
+			ShortUrl:    item.ShortUrl,
+			UserId:      item.UserId,
+			IsDeleted:   item.IsDeleted,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (db *PgxStorage) GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error) {
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE original = $1"
+	row := db.Con.QueryRowContext(ctx, sql, origin)
+
+	var item recordPgx
+
+	if err := row.Scan(
+		&item.ShortUrl,
+		&item.OriginarUrl,
+		&item.UserId,
+		&item.IsDeleted,
+	); err != nil {
+		return nil, err
+	}
+
+	return &models.UrlItem{
+		OriginarUrl: item.OriginarUrl,
+		ShortUrl:    item.ShortUrl,
+		UserId:      item.UserId,
+		IsDeleted:   item.IsDeleted,
+	}, nil
+}
+
+func (db *PgxStorage) GetByShort(ctx context.Context, short string) (*models.UrlItem, error) {
+	sql := "SELECT short, original, user_id, is_deleted FROM urls WHERE short = $1"
+	row := db.Con.QueryRowContext(ctx, sql, short)
+
+	var item recordPgx
+
+	if err := row.Scan(
+		&item.ShortUrl,
+		&item.OriginarUrl,
+		&item.UserId,
+		&item.IsDeleted,
+	); err != nil {
+		return nil, err
+	}
+
+	return &models.UrlItem{
+		OriginarUrl: item.OriginarUrl,
+		ShortUrl:    item.ShortUrl,
+		UserId:      item.UserId,
+		IsDeleted:   item.IsDeleted,
+	}, nil
+}
+
+func (db *PgxStorage) CreateUrl(ctx context.Context, data models.InsertData) error {
+	sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+	_, err := db.Con.ExecContext(ctx, sql, data.Key, data.Value, data.UserId)
+
+	return err
+}
+
+func (db *PgxStorage) CreateUrls(ctx context.Context, data []models.InsertData) error {
+	tx, err := db.Con.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, item := range data {
+		sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
+
+		_, err := tx.ExecContext(ctx, sql, item.Key, item.Value, item.UserId)
+		if err != nil {
+			if transErr := tx.Rollback(); transErr != nil {
+				return transErr
+			}
+
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

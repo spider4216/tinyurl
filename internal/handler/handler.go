@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,42 +14,102 @@ import (
 	"go.uber.org/zap"
 )
 
-const maxBodySize = 2 * 1024
-
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
-		conf:    conf,
-		service: service,
-		logger:  logger,
+		conf:         conf,
+		service:      service,
+		logger:       logger,
+		delSemaphore: make(chan struct{}, conf.DeleteMaxPool),
 	}
 }
 
 type Handler struct {
-	conf    *config.Config
-	service service.Service
-	logger  *zap.SugaredLogger
+	conf         *config.Config
+	service      service.Service
+	logger       *zap.SugaredLogger
+	delSemaphore chan struct{}
 }
 
-func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	req := []string{}
+
+	if err := json.Unmarshal(body, &req); err != nil {
+		h.logger.Error("unmarshall error", zap.Error(err))
+		return
+	}
+
+	ctx := r.Context()
+
+	if !h.service.IsSignValidFromCtx(ctx) {
+		// Если  токен не валидный, нет смысла ходить в БД и удалять
+		// записи, поскольку таковых не будет
+		h.logger.Error("Unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if len(req) <= 0 {
+		h.logger.Error("Empty ids")
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	ctx = context.WithoutCancel(ctx)
+
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		h.logger.Error("cannot conver user id to string")
+		return
+	}
+
+	// Реализация паттерна Семафора, ограничиваем
+	// кол-во задач на удаление
+	select {
+	case h.delSemaphore <- struct{}{}:
+		go func() {
+			defer func() {
+				<-h.delSemaphore
+				h.logger.Debug("Release task for delete. Left: ", len(h.delSemaphore))
+			}()
+			h.logger.Debug("Push task for delete. Left: ", len(h.delSemaphore))
+			h.service.DeleteBatchAsync(ctx, req, userId)
+		}()
+	default:
+		// Поскольку эндпоинт должен возвращать сразу же HTTP 202
+		// Если превышен лимит запросов, то выводим ошибку
+		// HTTP 429
+		h.logger.Error("Too many tasks for delete. Try again later")
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
+	}
+
+	// По требованию к задаче, эндпоинт должен синхронно возвращать
+	// 202 Accepted OK
+	h.logger.Debug("Accepted OK")
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	body, err := io.ReadAll(lr)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Error("failed to write response", zap.Error(err))
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -59,7 +120,14 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urls := h.service.MapForMapUrlIds(req)
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		h.logger.Error("cannot convert user id to string")
+		return
+	}
+
+	urls := h.service.MapForMapUrlIds(req, userId)
 
 	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
 		h.logger.Error("unmarshall error", zap.Error(err))
@@ -83,25 +151,16 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	body, err := io.ReadAll(lr)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Error("failed to write response", zap.Error(err))
+		h.logger.Error("failed read body", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -114,7 +173,14 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	err = h.service.StoreData(ctx, id, string(req.Url))
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		h.logger.Error("cannot convert user id to string")
+		return
+	}
+
+	err = h.service.StoreData(ctx, id, string(req.Url), userId)
 
 	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
@@ -156,36 +222,29 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
-	lr := io.LimitReader(r.Body, maxBodySize)
+	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
-	url, err := io.ReadAll(lr)
+	url, err := io.ReadAll(r.Body)
 	if err != nil {
+		h.logger.Error("failed read body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
-
-		if _, err := w.Write([]byte("cannot read body")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
 		return
 	}
 
 	id := h.service.GenerateId()
 
-	err = h.service.StoreData(ctx, id, string(url))
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		h.logger.Error("cannot conver user id to string")
+		return
+	}
+
+	err = h.service.StoreData(ctx, id, string(url), userId)
 
 	if err != nil && !h.service.IsErrAsDuplicate(err) {
 		h.logger.Error("store error", zap.Error(err))
@@ -209,6 +268,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
 	w.Header().Set("Content-Type", "plain/text")
+
 	w.WriteHeader(status)
 
 	if _, err := w.Write([]byte(full)); err != nil {
@@ -217,22 +277,21 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if _, err := w.Write([]byte("Method not allowed")); err != nil {
-			h.logger.Error("failed to write response", zap.Error(err))
-		}
-
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
 	id := r.PathValue("id")
 
 	url, err := h.service.GetUrl(ctx, id)
+	var deletedError service.DeletedUrlError
+
+	if errors.As(err, &deletedError) {
+		h.logger.Error("url was deleted")
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	if err != nil {
 		h.logger.Error("get data error", zap.Error(err))
 		w.WriteHeader(http.StatusNotFound)
@@ -257,6 +316,55 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
+
+	defer cancel()
+
+	// Если кука пришла, то нужно ее провалидировать
+	if !h.service.IsSignValidFromCtx(ctx) {
+		h.logger.Error("Unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		h.logger.Error("cannot conver user id to string")
+		return
+	}
+
+	urls, err := h.service.GetUrlsByUserId(ctx, userId, h.conf.BaseUrl)
+	if err != nil {
+		h.logger.Error("get data error", zap.Error(err))
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	h.logger.Debug("Got urls: ", urls)
+
+	if len(urls) <= 0 {
+		h.logger.Debug("No items for user ", userId)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	d, err := json.Marshal(urls)
+	if err != nil {
+		h.logger.Error("marshal response error", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if _, err := w.Write(d); err != nil {
+		h.logger.Fatalln("failed to write response", zap.Error(err))
+	}
 }
 
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {

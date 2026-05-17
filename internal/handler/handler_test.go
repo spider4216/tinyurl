@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
@@ -29,8 +28,8 @@ func prepateHandler(store storage.Storage) Handler {
 	}
 
 	r := repository.New(store)
-	s := service.New(r)
 	logger, err := logger.InitZap("debug")
+	s := service.New(r, logger)
 	if err != nil {
 		panic("cannot prepare handler")
 	}
@@ -49,6 +48,7 @@ func TestGetShortenUrl(t *testing.T) {
 		method string
 		urlTo  string
 		urlSrc string
+		userId string
 		want   want
 	}{
 		{
@@ -56,18 +56,10 @@ func TestGetShortenUrl(t *testing.T) {
 			method: http.MethodPost,
 			urlTo:  "/api/shorten",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty1",
 			want: want{
 				contentType: "application/json",
 				status:      http.StatusCreated,
-			},
-		},
-		{
-			name:   "Case #2 Method Not Allowed",
-			method: http.MethodGet,
-			urlTo:  "/",
-			urlSrc: "http://mysite.loc/",
-			want: want{
-				status: http.StatusMethodNotAllowed,
 			},
 		},
 	}
@@ -78,7 +70,6 @@ func TestGetShortenUrl(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-
 		req := models.ShortenReq{
 			Url: tc.urlSrc,
 		}
@@ -92,6 +83,14 @@ func TestGetShortenUrl(t *testing.T) {
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
+
+		r = r.WithContext(ctx)
 
 		h.GetShortenUrl(w, r)
 
@@ -136,6 +135,7 @@ func TestGenerateId(t *testing.T) {
 		method string
 		urlTo  string
 		urlSrc string
+		userId string
 		want   want
 	}{
 		{
@@ -143,18 +143,10 @@ func TestGenerateId(t *testing.T) {
 			method: http.MethodPost,
 			urlTo:  "/",
 			urlSrc: "http://mysite.loc/",
+			userId: "qwerty6",
 			want: want{
 				contentType: "plain/text",
 				status:      http.StatusCreated,
-			},
-		},
-		{
-			name:   "Case #2 Method Not Allowed",
-			method: http.MethodGet,
-			urlTo:  "/",
-			urlSrc: "http://mysite.loc/",
-			want: want{
-				status: http.StatusMethodNotAllowed,
 			},
 		},
 	}
@@ -172,6 +164,14 @@ func TestGenerateId(t *testing.T) {
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
+
+		r = r.WithContext(ctx)
 
 		h.GenerateId(w, r)
 
@@ -199,6 +199,65 @@ func TestGenerateId(t *testing.T) {
 	}
 }
 
+func TestUrls(t *testing.T) {
+	type want struct {
+		contentType string
+		status      int
+	}
+
+	cases := []struct {
+		name   string
+		method string
+		userId string
+		want   want
+	}{
+		{
+			name:   "Case #1 Method return cookie",
+			method: http.MethodGet,
+			userId: "qwerty4",
+			want: want{
+				status: http.StatusNoContent,
+			},
+		},
+	}
+
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
+	for _, tc := range cases {
+		store, err := storage.New(storage.MapDriver, cfg, logger)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/user/urls", nil)
+		w := httptest.NewRecorder()
+
+		h := prepateHandler(store)
+
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
+
+		r = r.WithContext(ctx)
+
+		h.Urls(w, r)
+
+		t.Run(tc.name, func(t *testing.T) {
+			resp := w.Result()
+
+			if tc.want.contentType != "" {
+				assert.Equal(t, tc.want.contentType, resp.Header.Get("Content-Type"))
+			}
+
+			assert.Equal(t, tc.want.status, resp.StatusCode)
+		})
+	}
+}
+
 func TestGetUrl(t *testing.T) {
 	type want struct {
 		contentType string
@@ -211,6 +270,7 @@ func TestGetUrl(t *testing.T) {
 		method string
 		urlSrc string
 		id     string
+		userId string
 		want   want
 	}{
 		{
@@ -218,6 +278,7 @@ func TestGetUrl(t *testing.T) {
 			method: http.MethodGet,
 			urlSrc: "http://mysite.loc/",
 			id:     "QdYD7GY5",
+			userId: "qwerty777",
 			want: want{
 				contentType: "plain/text",
 				status:      http.StatusTemporaryRedirect,
@@ -227,6 +288,7 @@ func TestGetUrl(t *testing.T) {
 		{
 			name:   "Case #2 Not Found",
 			method: http.MethodGet,
+			userId: "qwerty778",
 			want: want{
 				status: http.StatusNotFound,
 			},
@@ -236,10 +298,6 @@ func TestGetUrl(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-
-	defer cancel()
-
 	logger, err := logger.InitZap("debug")
 	require.NoError(t, err)
 
@@ -248,16 +306,14 @@ func TestGetUrl(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.urlSrc != "" {
-			m := map[string]string{
-				"uuid":         tc.id,
-				"original_url": tc.urlSrc,
-				"short_url":    tc.id,
+			m := models.InsertData{
+				Key:   tc.id,
+				Value: tc.urlSrc,
 			}
 
-			b, err := json.Marshal(m)
 			require.NoError(t, err)
 
-			err = store.Save(ctx, b)
+			err = store.CreateUrl(context.Background(), m)
 			require.NoError(t, err)
 		}
 
@@ -267,6 +323,15 @@ func TestGetUrl(t *testing.T) {
 			// использую результат короткого отправляю запрос на GET
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", tc.id), nil)
 			r.SetPathValue("id", tc.id)
+
+			repo := repository.New(store)
+			service := service.New(repo, logger)
+
+			ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+			ctx = service.SetIsSignValidToCtx(ctx, true)
+
+			r = r.WithContext(ctx)
+
 			w := httptest.NewRecorder()
 
 			h.GetUrl(w, r)
@@ -303,6 +368,7 @@ func TestGetUrls(t *testing.T) {
 		name   string
 		method string
 		urlSrc []urlsSrc
+		userId string
 		want   want
 	}{
 		{
@@ -318,6 +384,7 @@ func TestGetUrls(t *testing.T) {
 					OriginalUrl:   "http://mysite2.loc",
 				},
 			},
+			userId: "qwerty12",
 			want: want{
 				contentType: "application/json",
 				status:      http.StatusCreated,
@@ -333,15 +400,23 @@ func TestGetUrls(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range cases {
-		body, err := json.Marshal(tc.urlSrc)
-		require.NoError(t, err)
-
-		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
-		w := httptest.NewRecorder()
 		store, err := storage.New(storage.MapDriver, cfg, logger)
 		require.NoError(t, err)
 
 		h := prepateHandler(store)
+
+		body, err := json.Marshal(tc.urlSrc)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
+		r = r.WithContext(ctx)
+
+		w := httptest.NewRecorder()
 
 		h.GetShortenUrls(w, r)
 

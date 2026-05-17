@@ -15,6 +15,13 @@ type Config struct {
 	StoreDriver   string        `env:"STORE_DRIVER"`                // Драйвер хранилища
 	FileStorePath string        `env:"FILE_STORAGE_PATH"`           // В случае store driver file - путь до файла
 	CtxTimeout    time.Duration `env:"CTX_TIMEOUT" envDefault:"3s"` // Таймаут контекста в секундах
+	ReadTimeout   time.Duration `env:"READ_TIMEOUT" envDefault:"5s"`
+	WriteTimeout  time.Duration `env:"WRITE_TIMEOUT" envDefault:"10s"`
+	IdleTimeout   time.Duration `env:"IDLE_TIMEOUT" envDefault:"30s"`
+	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048"`
+	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h"`
+	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty"` // Ключ для подписи значения куки
+	DeleteMaxPool int           `env:"DEL_MAX_POOL" envDefault:"10"` // Кол-во одновременно вып-мых задач на удаление
 }
 
 func New() (*Config, error) {

@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spider4216/tinyurl/internal/handler"
@@ -22,29 +21,32 @@ func main() {
 	app.logger.Debug("Config: ", app.cfg)
 
 	repo := repository.New(app.store)
-	service := service.New(repo)
+	service := service.New(repo, app.logger)
 	handler := handler.New(app.cfg, app.logger, service)
-	middlewares := middleware.New(app.logger)
+	middlewares := middleware.New(app.logger, app.cfg, service)
 
 	r := chi.NewRouter()
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middlewares.WithLogging)
 		r.Use(middlewares.Gzip)
+		r.Use(middlewares.WithAuth)
 
 		r.Post("/", http.HandlerFunc(handler.GenerateId))
 		r.Get("/{id}", http.HandlerFunc(handler.GetUrl))
 		r.Post("/api/shorten", http.HandlerFunc(handler.GetShortenUrl))
 		r.Get("/ping", http.HandlerFunc(handler.Ping))
 		r.Post("/api/shorten/batch", http.HandlerFunc(handler.GetShortenUrls))
+		r.Get("/api/user/urls", http.HandlerFunc(handler.Urls))
+		r.Delete("/api/user/urls", http.HandlerFunc(handler.DeleteUrls))
 	})
 
 	srv := &http.Server{
 		Addr:         app.cfg.ServerAddress,
 		Handler:      r,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  app.cfg.ReadTimeout,
+		WriteTimeout: app.cfg.WriteTimeout,
+		IdleTimeout:  app.cfg.IdleTimeout,
 	}
 
 	log.Printf("Listen on: %s", app.cfg.ServerAddress)
