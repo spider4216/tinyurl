@@ -13,7 +13,6 @@ import (
 
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
-	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -85,8 +84,11 @@ func TestGetShortenUrl(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
 
 		r = r.WithContext(ctx)
 
@@ -163,8 +165,11 @@ func TestGenerateId(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
 
 		r = r.WithContext(ctx)
 
@@ -231,8 +236,11 @@ func TestUrls(t *testing.T) {
 
 		h := prepateHandler(store)
 
-		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
 
 		r = r.WithContext(ctx)
 
@@ -316,8 +324,11 @@ func TestGetUrl(t *testing.T) {
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", tc.id), nil)
 			r.SetPathValue("id", tc.id)
 
-			ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
-			ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
+			repo := repository.New(store)
+			service := service.New(repo, logger)
+
+			ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+			ctx = service.SetIsSignValidToCtx(ctx, true)
 
 			r = r.WithContext(ctx)
 
@@ -398,8 +409,11 @@ func TestGetUrls(t *testing.T) {
 		require.NoError(t, err)
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
-		ctx := context.WithValue(r.Context(), middleware.UserKey, tc.userId)
-		ctx = context.WithValue(ctx, middleware.ValidSignKey, true)
+		repo := repository.New(store)
+		service := service.New(repo, logger)
+
+		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
+		ctx = service.SetIsSignValidToCtx(ctx, true)
 		r = r.WithContext(ctx)
 
 		w := httptest.NewRecorder()

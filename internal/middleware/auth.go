@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -12,16 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-)
-
-type (
-	UserIdKey      string
-	IsSignValidKey string
-)
-
-const (
-	UserKey      UserIdKey      = "user_id"
-	ValidSignKey IsSignValidKey = "is_sign_valid"
 )
 
 func (m Middleware) WithAuth(h http.Handler) http.Handler {
@@ -58,8 +47,8 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 			m.logger.Debug("Set user_id and sign validate result to ctx ", userId, true)
 
 			// Устанавливаем user ID в контекст
-			ctx := context.WithValue(r.Context(), UserKey, userId)
-			ctx = context.WithValue(ctx, ValidSignKey, true)
+			ctx := m.service.SetUserIdToCtx(r.Context(), userId)
+			ctx = m.service.SetIsSignValidToCtx(ctx, true)
 
 			// создаем новый request с обновленным контекстом
 			r = r.WithContext(ctx)
@@ -97,11 +86,11 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 		m.logger.Debug("Cookie validation result ", isValid)
 
 		// Устанавливаем user ID в контекст
-		ctx := context.WithValue(r.Context(), UserKey, userId)
+		ctx := m.service.SetUserIdToCtx(r.Context(), userId)
 		// Поскольку по требованию инкрементов, некоторые эндпоинты должны
 		// пропускать невалидность, устанавливаем флаг валидности куки
 		// в контекст и делегируем поведение невалидности обработчикам
-		ctx = context.WithValue(ctx, ValidSignKey, isValid)
+		ctx = m.service.SetIsSignValidToCtx(ctx, isValid)
 
 		// создаем новый request с обновленным контекстом
 		r = r.WithContext(ctx)

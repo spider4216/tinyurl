@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/spider4216/tinyurl/internal/config"
-	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
 	"go.uber.org/zap"
@@ -50,14 +49,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	isCookieValid, ok := ctx.Value(middleware.ValidSignKey).(bool)
-
-	if !ok {
-		h.logger.Error("cannot conver user id to string")
-		return
-	}
-
-	if !isCookieValid {
+	if !h.service.IsSignValidFromCtx(ctx) {
 		// Если  токен не валидный, нет смысла ходить в БД и удалять
 		// записи, поскольку таковых не будет
 		h.logger.Error("Unauthorized")
@@ -73,9 +65,9 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 
 	ctx = context.WithoutCancel(ctx)
 
-	userId, ok := ctx.Value(middleware.UserKey).(string)
+	userId := h.service.GetUserIdFromCtx(ctx)
 
-	if !ok {
+	if userId == "" {
 		h.logger.Error("cannot conver user id to string")
 		return
 	}
@@ -128,9 +120,9 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := ctx.Value(middleware.UserKey).(string)
+	userId := h.service.GetUserIdFromCtx(ctx)
 
-	if !ok {
+	if userId == "" {
 		h.logger.Error("cannot convert user id to string")
 		return
 	}
@@ -181,9 +173,9 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, ok := ctx.Value(middleware.UserKey).(string)
+	userId := h.service.GetUserIdFromCtx(ctx)
 
-	if !ok {
+	if userId == "" {
 		h.logger.Error("cannot convert user id to string")
 		return
 	}
@@ -245,9 +237,9 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	id := h.service.GenerateId()
 
-	userId, ok := ctx.Value(middleware.UserKey).(string)
+	userId := h.service.GetUserIdFromCtx(ctx)
 
-	if !ok {
+	if userId == "" {
 		h.logger.Error("cannot conver user id to string")
 		return
 	}
@@ -331,23 +323,16 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 	defer cancel()
 
-	isValid, ok := ctx.Value(middleware.ValidSignKey).(bool)
-
-	if !ok {
-		h.logger.Error("cannot conver is valid cookie to bool")
-		return
-	}
-
 	// Если кука пришла, то нужно ее провалидировать
-	if !isValid {
+	if !h.service.IsSignValidFromCtx(ctx) {
 		h.logger.Error("Unauthorized")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	userId, ok := ctx.Value(middleware.UserKey).(string)
+	userId := h.service.GetUserIdFromCtx(ctx)
 
-	if !ok {
+	if userId == "" {
 		h.logger.Error("cannot conver user id to string")
 		return
 	}
