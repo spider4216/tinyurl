@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -25,7 +26,8 @@ func TestGzip(t *testing.T) {
 	store, err := storage.New(storage.MapDriver, cfg, logger)
 	require.NoError(t, err)
 	repo := repository.New(store)
-	service := service.New(repo, logger)
+	event := audit.NewAuditEvent()
+	service := service.New(repo, logger, event)
 
 	m := New(logger, cfg, service)
 

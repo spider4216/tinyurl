@@ -8,6 +8,9 @@ run-slice:
 run-file:
 	go run ./cmd/shortener -l debug -f ./store.json
 
+run-file-audit:
+	go run ./cmd/shortener -l debug -f ./store.json --audit-file ./audit.json --audit-url http://127.0.0.1
+
 run-pgx:
 	DATABASE_DSN=${DATABASE_DSN} go run ./cmd/shortener -l debug
 

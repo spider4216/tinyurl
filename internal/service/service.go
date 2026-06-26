@@ -6,9 +6,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"go.uber.org/zap"
@@ -18,16 +20,18 @@ const (
 	ChankSize = 2
 )
 
-func New(repo *repository.Repository, logger *zap.SugaredLogger) Service {
+func New(repo *repository.Repository, logger *zap.SugaredLogger, audit audit.Publisher) Service {
 	return Service{
 		repo:   repo,
 		logger: logger,
+		audit:  audit,
 	}
 }
 
 type Service struct {
 	repo   *repository.Repository
 	logger *zap.SugaredLogger
+	audit  audit.Publisher
 }
 
 type DeletedUrlError struct{}
@@ -141,4 +145,17 @@ func (s Service) IsErrAsDuplicate(err error) bool {
 	}
 
 	return pgErr.Code == pgerrcode.UniqueViolation
+}
+
+func (s Service) AuditNotify(action audit.AuditAction, userID string, url string) error {
+	s.logger.Debug("Audit notify with action ", action)
+
+	n := audit.Body{
+		TS:     time.Now(),
+		Action: action,
+		UserID: userID,
+		URL:    url,
+	}
+
+	return s.audit.Notify(n)
 }

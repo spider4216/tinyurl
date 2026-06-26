@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -213,6 +214,8 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url))
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -267,6 +270,8 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
+	h.service.AuditNotify(audit.ShortenAction, userId, string(url))
+
 	w.Header().Set("Content-Type", "plain/text")
 
 	w.WriteHeader(status)
@@ -312,6 +317,8 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	h.service.AuditNotify(audit.FollowAction, "", url)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)

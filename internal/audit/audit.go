@@ -9,9 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type AuditAction string
+
 const (
-	AuditFileObserverID   string = "audit_file_onserver"
-	AuditServerObserverID string = "audit_server_observer"
+	AuditFileObserverID   string      = "audit_file_onserver"
+	AuditServerObserverID string      = "audit_server_observer"
+	ShortenAction         AuditAction = "shorten"
+	FollowAction          AuditAction = "follow"
 )
 
 type Publisher interface {
@@ -36,23 +40,31 @@ func NewAuditEvent() *AuditEvent {
 
 type Body struct {
 	TS     time.Time
-	Action string
+	Action AuditAction
 	UserID string
 	URL    string
 }
 
 type AuditFileObserver struct {
 	ID     string
-	Path   string
 	Logger *zap.SugaredLogger
+	File   *os.File
 }
 
-func NewAuditFileObserver(path string, logger *zap.SugaredLogger) *AuditFileObserver {
+func NewAuditFileObserver(path string, logger *zap.SugaredLogger) (*AuditFileObserver, error) {
+	logger.Debug("Audit file observer was created")
+
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &AuditFileObserver{
 		ID:     AuditFileObserverID,
-		Path:   path,
 		Logger: logger,
-	}
+		File:   file,
+	}, nil
 }
 
 func (afo *AuditFileObserver) GetID() string {
@@ -60,27 +72,20 @@ func (afo *AuditFileObserver) GetID() string {
 }
 
 func (afo *AuditFileObserver) Update(data Body) error {
+	afo.Logger.Debug("Update in audit file observer")
+
 	raw, err := json.Marshal(data)
 
 	if err != nil {
 		return err
 	}
 
-	file, err := os.OpenFile(afo.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	if err != nil {
+	if _, err = afo.File.Write(raw); err != nil {
+		afo.Logger.Error("cannot write in audit file", zap.Error(err))
 		return err
 	}
 
-	defer func() {
-		if err := file.Close(); err != nil {
-			afo.Logger.Warn("Cannot close file correctly")
-		}
-	}()
-
-	if _, err = file.Write(raw); err != nil {
-		return err
-	}
+	afo.Logger.Debug("File audit append ", string(raw))
 
 	return nil
 }
@@ -93,6 +98,8 @@ type AuditServerObserver struct {
 }
 
 func NewAuditServerObserver(host string, url string, logger *zap.SugaredLogger) *AuditServerObserver {
+	logger.Debug("Audit server observer was created")
+
 	cli := resty.New().
 		SetBaseURL(host).
 		SetHeader("Content-Type", "application/json")
@@ -110,6 +117,8 @@ func (aso *AuditServerObserver) GetID() string {
 }
 
 func (aso *AuditServerObserver) Update(data Body) error {
+	aso.Logger.Debug("Update in audit server observer")
+
 	_, err := aso.Cli.R().SetBody(data).Post(aso.URL)
 
 	return err
