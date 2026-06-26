@@ -114,6 +114,14 @@ func (app *app) initConfig() error {
 		cfg.DbDsn = flags.DbCon
 	}
 
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = flags.AuditFile
+	}
+
+	if cfg.AuditURL == "" {
+		cfg.AuditURL = flags.AuditURL
+	}
+
 	// Если DSN установлен, значит дайвер pgx
 	if cfg.DbDsn != "" {
 		cfg.StoreDriver = storage.PostgresDriver
