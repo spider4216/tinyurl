@@ -157,7 +157,7 @@ func (app *app) initAudit() error {
 		event.Register(ob)
 	}
 
-	if app.cfg.ServerAddress != "" {
+	if app.cfg.AuditURL != "" {
 		u, err := url.Parse(app.cfg.AuditURL)
 		if err != nil {
 			return err
