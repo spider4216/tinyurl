@@ -163,7 +163,7 @@ func (app *app) initAudit() error {
 			return err
 		}
 
-		host := fmt.Sprintf("%s%s", u.Scheme, u.Host)
+		host := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 
 		ob := audit.NewAuditServerObserver(host, u.Path, app.logger)
 
