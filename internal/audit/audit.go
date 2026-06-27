@@ -54,8 +54,7 @@ type AuditFileObserver struct {
 func NewAuditFileObserver(path string, logger *zap.SugaredLogger) (*AuditFileObserver, error) {
 	logger.Debug("Audit file observer was created")
 
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +74,6 @@ func (afo *AuditFileObserver) Update(data Body) error {
 	afo.Logger.Debug("Update in audit file observer")
 
 	raw, err := json.Marshal(data)
-
 	if err != nil {
 		return err
 	}

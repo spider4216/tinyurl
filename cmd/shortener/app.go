@@ -150,7 +150,6 @@ func (app *app) initAudit() error {
 
 	if app.cfg.AuditFile != "" {
 		ob, err := audit.NewAuditFileObserver(app.cfg.AuditFile, app.logger)
-
 		if err != nil {
 			return err
 		}
@@ -160,7 +159,6 @@ func (app *app) initAudit() error {
 
 	if app.cfg.ServerAddress != "" {
 		u, err := url.Parse(app.cfg.AuditURL)
-
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,6 @@ func (aso *auditSliceObserver) GetID() string {
 
 func (aso *auditSliceObserver) Update(data Body) error {
 	raw, err := json.Marshal(data)
-
 	if err != nil {
 		return err
 	}
@@ -52,6 +51,7 @@ func TestAudit(t *testing.T) {
 	model := Body{}
 
 	err = json.Unmarshal(raw, &model)
+	require.NoError(t, err)
 
 	assert.Equal(t, data.Action, model.Action)
 }

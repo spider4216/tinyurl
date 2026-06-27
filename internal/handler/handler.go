@@ -214,7 +214,10 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url))
+	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url)); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -270,7 +273,10 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 
 	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
 
-	h.service.AuditNotify(audit.ShortenAction, userId, string(url))
+	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(url)); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
+		return
+	}
 
 	w.Header().Set("Content-Type", "plain/text")
 
@@ -318,7 +324,10 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.AuditNotify(audit.FollowAction, "", url)
+	if err := h.service.AuditNotify(audit.FollowAction, "", url); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
+		return
+	}
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)
