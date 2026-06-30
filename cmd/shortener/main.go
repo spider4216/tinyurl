@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
-	"go.uber.org/zap"
 
 	_ "net/http/pprof"
 )

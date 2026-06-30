@@ -11,6 +11,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
@@ -18,8 +21,6 @@ import (
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/spider4216/tinyurl/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func prepateHandler(store storage.Storage) Handler {

@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
 type recordSlice struct {

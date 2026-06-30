@@ -5,8 +5,9 @@ import (
 	"database/sql"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
 const Table = "urls"

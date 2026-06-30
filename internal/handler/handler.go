@@ -7,11 +7,12 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
-	"go.uber.org/zap"
 )
 
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {

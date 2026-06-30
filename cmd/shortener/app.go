@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net/url"
 
+	"go.uber.org/zap"
+
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/storage"
 	"github.com/spider4216/tinyurl/migrations"
-	"go.uber.org/zap"
 )
 
 type app struct {

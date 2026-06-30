@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/service"
-	"go.uber.org/zap"
 )
 
 type Middleware struct {

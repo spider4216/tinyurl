@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+
 	"github.com/spider4216/tinyurl/internal/config/db"
 )
 
