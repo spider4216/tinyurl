@@ -127,6 +127,53 @@ func TestGetShortenUrl(t *testing.T) {
 	}
 }
 
+func BenchmarkGenerateId(b *testing.B) {
+	cfg, err := config.New()
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	logger, err := logger.InitZap("debug")
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("http://mysite.loc/")))
+	w := httptest.NewRecorder()
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	h := prepateHandler(store)
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent()
+	service := service.New(repo, logger, event)
+
+	ctx := service.SetUserIdToCtx(r.Context(), "qwerty999")
+	ctx = service.SetIsSignValidToCtx(ctx, true)
+
+	r = r.WithContext(ctx)
+
+	// Сбрасываем таймер
+	b.ResetTimer()
+
+	b.Run("GenerateId", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			h.GenerateId(w, r)
+			res := w.Result()
+
+			if res.StatusCode != http.StatusCreated {
+				b.Fatal("created status fail")
+			}
+		}
+	})
+}
+
 func TestGenerateId(t *testing.T) {
 	type want struct {
 		contentType string

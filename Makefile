@@ -20,6 +20,9 @@ test:
 test-v:
 	go test ./... -v
 
+bench:
+	go test -bench=. -benchmem -benchtime=100ms ./...
+
 lint:
 	golangci-lint run
 
