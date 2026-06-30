@@ -129,13 +129,11 @@ func TestGetShortenUrl(t *testing.T) {
 
 func BenchmarkGenerateId(b *testing.B) {
 	cfg, err := config.New()
-
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	logger, err := logger.InitZap("info")
-
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -143,7 +141,6 @@ func BenchmarkGenerateId(b *testing.B) {
 	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("http://mysite.loc/")))
 	w := httptest.NewRecorder()
 	store, err := storage.New(storage.MapDriver, cfg, logger)
-
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -407,19 +404,16 @@ func TestGetUrl(t *testing.T) {
 
 func BenchmarkGetUrls(b *testing.B) {
 	cfg, err := config.New()
-
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	logger, err := logger.InitZap("debug")
-
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	store, err := storage.New(storage.MapDriver, cfg, logger)
-
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -443,7 +437,6 @@ func BenchmarkGetUrls(b *testing.B) {
 	h := prepateHandler(store)
 
 	body, err := json.Marshal(urls)
-
 	if err != nil {
 		b.Fatal(err)
 	}
