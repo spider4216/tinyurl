@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/storage"
@@ -14,6 +16,7 @@ type app struct {
 	cfg    *config.Config
 	logger *zap.SugaredLogger
 	store  storage.Storage
+	audit  audit.Publisher
 }
 
 func newApp() app {
@@ -34,6 +37,10 @@ func (app *app) Run() error {
 	}
 
 	if err := app.initMigrations(); err != nil {
+		return err
+	}
+
+	if err := app.initAudit(); err != nil {
 		return err
 	}
 
@@ -114,6 +121,14 @@ func (app *app) initConfig() error {
 		cfg.DbDsn = flags.DbCon
 	}
 
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = flags.AuditFile
+	}
+
+	if cfg.AuditURL == "" {
+		cfg.AuditURL = flags.AuditURL
+	}
+
 	// Если DSN установлен, значит дайвер pgx
 	if cfg.DbDsn != "" {
 		cfg.StoreDriver = storage.PostgresDriver
@@ -126,6 +141,36 @@ func (app *app) initConfig() error {
 	}
 
 	app.cfg = cfg
+
+	return nil
+}
+
+func (app *app) initAudit() error {
+	event := audit.NewAuditEvent()
+
+	if app.cfg.AuditFile != "" {
+		ob, err := audit.NewAuditFileObserver(app.cfg.AuditFile, app.logger)
+		if err != nil {
+			return err
+		}
+
+		event.Register(ob)
+	}
+
+	if app.cfg.AuditURL != "" {
+		u, err := url.Parse(app.cfg.AuditURL)
+		if err != nil {
+			return err
+		}
+
+		host := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+
+		ob := audit.NewAuditServerObserver(host, u.Path, app.logger)
+
+		event.Register(ob)
+	}
+
+	app.audit = event
 
 	return nil
 }

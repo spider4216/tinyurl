@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/models"
@@ -29,7 +30,8 @@ func prepateHandler(store storage.Storage) Handler {
 
 	r := repository.New(store)
 	logger, err := logger.InitZap("debug")
-	s := service.New(r, logger)
+	event := audit.NewAuditEvent()
+	s := service.New(r, logger, event)
 	if err != nil {
 		panic("cannot prepare handler")
 	}
@@ -85,7 +87,8 @@ func TestGetShortenUrl(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent()
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -166,7 +169,8 @@ func TestGenerateId(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent()
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -237,7 +241,8 @@ func TestUrls(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent()
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -325,7 +330,8 @@ func TestGetUrl(t *testing.T) {
 			r.SetPathValue("id", tc.id)
 
 			repo := repository.New(store)
-			service := service.New(repo, logger)
+			event := audit.NewAuditEvent()
+			service := service.New(repo, logger, event)
 
 			ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 			ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -410,7 +416,8 @@ func TestGetUrls(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent()
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)

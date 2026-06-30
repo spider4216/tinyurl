@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
@@ -214,6 +215,11 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url)); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -270,6 +276,11 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	// Судя по профилированию так быстрее
 	full := h.conf.BaseUrl + "/" + id
 
+	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(url)); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
+		return
+	}
+
 	w.Header().Set("Content-Type", "plain/text")
 
 	w.WriteHeader(status)
@@ -313,6 +324,11 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 			h.logger.Error("failed to write response", zap.Error(err))
 		}
 
+		return
+	}
+
+	if err := h.service.AuditNotify(audit.FollowAction, "", url); err != nil {
+		h.logger.Error("cannot audit", zap.Error(err))
 		return
 	}
 
