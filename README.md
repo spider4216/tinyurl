@@ -119,3 +119,22 @@ full := baseUrl + "/" + url.Short
 
 Проведя diff заметил небольшое улучшение в -1MB
 
+## Результат
+
+### Команда
+
+```
+go tool pprof -sample_index=alloc_space -top -diff_base=profiles/base.pprof profiles/result.pprof
+```
+
+### Результат с фильтром
+
+```
+...
+-20.50MB  0.04%  0.58%      -31MB  0.06%  github.com/spider4216/tinyurl/internal/storage.(*FileStorage).GetByShort             
+-1.50MB 0.0029%  0.61%  1737.13MB  3.37%  github.com/spider4216/tinyurl/internal/handler.Handler.GenerateId         
+-1MB 0.0019%  0.61%       -2MB 0.0039%  github.com/spider4216/tinyurl/internal/service.Service.MapForMapUrlIds        
+-1MB 0.0019%  0.61%    -5.50MB 0.011%  github.com/spider4216/tinyurl/internal/handler.Handler.MapGenUrlsResp
+-1MB 0.0019%  0.61% -2812.41MB  5.46%  github.com/spider4216/tinyurl/internal/handler.Handler.GetShortenUrls
+...
+```
