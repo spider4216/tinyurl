@@ -134,7 +134,7 @@ func BenchmarkGenerateId(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	logger, err := logger.InitZap("debug")
+	logger, err := logger.InitZap("info")
 
 	if err != nil {
 		b.Fatal(err)
@@ -403,6 +403,74 @@ func TestGetUrl(t *testing.T) {
 			assert.Equal(t, tc.want.status, respGet.StatusCode)
 		})
 	}
+}
+
+func BenchmarkGetUrls(b *testing.B) {
+	cfg, err := config.New()
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	logger, err := logger.InitZap("debug")
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	type urlsSrc struct {
+		CorrelationId string `json:"correlation_id"`
+		OriginalUrl   string `json:"original_url"`
+	}
+
+	urls := []urlsSrc{
+		{
+			CorrelationId: "abc1",
+			OriginalUrl:   "http://mysite.loc",
+		},
+		{
+			CorrelationId: "abc2",
+			OriginalUrl:   "http://mysite2.loc",
+		},
+	}
+
+	h := prepateHandler(store)
+
+	body, err := json.Marshal(urls)
+
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent()
+	service := service.New(repo, logger, event)
+
+	// Сбрасываем таймер
+	b.ResetTimer()
+
+	b.Run("GetUrlsBatch", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body))
+			ctx := service.SetUserIdToCtx(r.Context(), "qwerty12123123")
+			ctx = service.SetIsSignValidToCtx(ctx, true)
+			r = r.WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			h.GetShortenUrls(w, r)
+			res := w.Result()
+
+			if res.StatusCode != http.StatusCreated {
+				b.Fatal("created status fail")
+			}
+		}
+	})
 }
 
 func TestGetUrls(t *testing.T) {

@@ -138,3 +138,12 @@ go tool pprof -sample_index=alloc_space -top -diff_base=profiles/base.pprof prof
 -1MB 0.0019%  0.61% -2812.41MB  5.46%  github.com/spider4216/tinyurl/internal/handler.Handler.GetShortenUrls
 ...
 ```
+
+# Бенчмарки
+
+Бенчмарки были написаны на два основных метода генерации коротких URL
+
+```
+POST /                  - генерация короткого URL
+POST /api/shorten/batch - генерация коротких URL
+```
