@@ -15,6 +15,18 @@ import (
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
+// Handler основной обработчик запросов.
+type Handler struct {
+	conf         *config.Config
+	service      service.Service
+	logger       *zap.SugaredLogger
+	delSemaphore chan struct{}
+}
+
+// New конструктор обработчика. Зависим от:
+// - конфигурации.
+// - логгера.
+// - сервиса.
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
 		conf:         conf,
@@ -24,13 +36,7 @@ func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service
 	}
 }
 
-type Handler struct {
-	conf         *config.Config
-	service      service.Service
-	logger       *zap.SugaredLogger
-	delSemaphore chan struct{}
-}
-
+// DeleteUrls удаление множества сокращенных URL.
 func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
@@ -100,6 +106,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// GetShortenUrls сокращение множества URL.
 func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -151,6 +158,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetShortenUrl сокращение URL.
 func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -229,6 +237,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GenerateId сокращение URL.
 func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -291,6 +300,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUrl получение сокращенного URL.
 func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -338,6 +348,7 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// Urls получение всех сокращенных URL пользователя.
 func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -387,6 +398,7 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Ping проверка доступности источника данных.
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 

@@ -15,12 +15,14 @@ import (
 	"github.com/spider4216/tinyurl/internal/models"
 )
 
+// FileStorage хранит данные в файле.
 type FileStorage struct {
 	file   *os.File
 	mu     sync.RWMutex
 	logger *zap.SugaredLogger
 }
 
+// NewFileStorage функция создания хранилища на файле.
 func NewFileStorage(filename string, logger *zap.SugaredLogger) (*FileStorage, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {

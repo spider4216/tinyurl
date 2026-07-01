@@ -19,11 +19,13 @@ type recordPgx struct {
 	UserId      string `json:"user_id"`
 }
 
+// PgxStorage хранилище где данные складываются в БД PostgreSQL.
 type PgxStorage struct {
 	Con    *sql.DB
 	logger *zap.SugaredLogger
 }
 
+// NewPgxStorage создание хранилища с БД PostgreSQL.
 func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 	db, err := sql.Open(PostgresDriver, con)
 	if err != nil {
