@@ -43,3 +43,9 @@ migrate-down:
 
 migrate-force:
 	migrate -path ./migrations -database $(dsn) force $(ver)
+
+doc:
+	godoc -http=:8080 -play
+
+doc-open:
+	firefox http://127.0.0.1:8080/pkg/github.com/spider4216/tinyurl/?m=all

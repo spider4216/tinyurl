@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// WithAuth прослойка для аутинтификации и авторизации
 func (m Middleware) WithAuth(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		authCookie, err := r.Cookie("user_id")
