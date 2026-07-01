@@ -128,6 +128,77 @@ func TestGetShortenUrl(t *testing.T) {
 	}
 }
 
+func ExampleHandler_GetShortenUrl() {
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+
+	logger, err := logger.InitZap("debug")
+	if err != nil {
+		panic(err)
+	}
+	req := models.ShortenReq{
+		Url: "http://mysite.loc/",
+	}
+
+	reqJson, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(reqJson))
+	w := httptest.NewRecorder()
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+	if err != nil {
+		panic(err)
+	}
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent()
+	s := service.New(repo, logger, event)
+	if err != nil {
+		panic("cannot prepare handler")
+	}
+
+	h := New(cfg, logger, s)
+
+	ctx := s.SetUserIdToCtx(r.Context(), "q1")
+	ctx = s.SetIsSignValidToCtx(ctx, true)
+
+	r = r.WithContext(ctx)
+
+	h.GetShortenUrl(w, r)
+
+	res := w.Result()
+
+	if res.Header.Get("Content-Type") != "application/json" {
+		panic("Response content type problem")
+	}
+
+	body, err := io.ReadAll(res.Body)
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			logger.Warn("Error closing")
+		}
+	}()
+
+	if err != nil {
+		panic(err)
+	}
+
+	resp := models.ShortenResp{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.Result == "" {
+		panic("response empty")
+	}
+}
+
 func BenchmarkGenerateId(b *testing.B) {
 	cfg, err := config.New()
 	if err != nil {
