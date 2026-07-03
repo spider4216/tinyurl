@@ -3,6 +3,7 @@ package audit
 import (
 	"encoding/json"
 	"os"
+	"sync"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
@@ -48,6 +49,7 @@ type AuditFileObserver struct {
 	ID     string
 	Logger *zap.SugaredLogger
 	File   *os.File
+	mu     sync.RWMutex
 }
 
 func NewAuditFileObserver(path string, logger *zap.SugaredLogger) (*AuditFileObserver, error) {
@@ -70,6 +72,9 @@ func (afo *AuditFileObserver) GetID() string {
 }
 
 func (afo *AuditFileObserver) Update(data Body) error {
+	afo.mu.Lock()
+	defer afo.mu.Unlock()
+
 	afo.Logger.Debug("Update in audit file observer")
 
 	raw, err := json.Marshal(data)

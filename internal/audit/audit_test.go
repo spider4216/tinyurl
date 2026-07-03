@@ -37,7 +37,7 @@ func TestAudit(t *testing.T) {
 	event.Register(ob)
 
 	data := Body{
-		TS:     time.Now(),
+		TS:     time.Now().Unix(),
 		Action: ShortenAction,
 		UserID: "test1",
 		URL:    "http://test.loc",
@@ -72,7 +72,7 @@ func ExampleAuditEvent_Notify() {
 
 	// Готовим тело аудита
 	data := Body{
-		TS:     time.Now(),
+		TS:     time.Now().Unix(),
 		Action: ShortenAction,
 		UserID: "test1",
 		URL:    "http://test.loc",
