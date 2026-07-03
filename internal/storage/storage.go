@@ -41,7 +41,7 @@ type Storage interface {
 	// GetByUserId извлекает из хранилища данные по идентификатору пользователя.
 	GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error)
 
-	// GetByOrigin извлекает сокращенный URL по сокращенному.
+	// GetByOrigin извлекает сокращенный URL по оригинальному.
 	GetByOrigin(ctx context.Context, origin string) (*models.UrlItem, error)
 
 	// GetByShort извлекает из хранилища оригинальный URL по сокращенному.

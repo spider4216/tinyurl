@@ -50,7 +50,7 @@ func (r *Repository) Ping(ctx context.Context) error {
 	return r.store.Ping(ctx)
 }
 
-// GetByUserId получение пользователя по идентификатору.
+// GetByUserId получение ссылок пользователя по его идентификатору
 func (r *Repository) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
 	return r.store.GetByUserId(ctx, userId)
 }
