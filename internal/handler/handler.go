@@ -332,7 +332,9 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.AuditNotify(audit.FollowAction, "", url)
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	h.service.AuditNotify(audit.FollowAction, userId, url)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)
