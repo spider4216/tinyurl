@@ -26,7 +26,7 @@ func TestGenerateId(t *testing.T) {
 	require.NoError(t, err)
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := New(repo, logger, event)
 
 	val := service.GenerateId()
@@ -46,7 +46,7 @@ func ExampleService_GenerateId() {
 	store, _ := storage.New(storage.MapDriver, cfg, logger)
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := New(repo, logger, event)
 
 	val := service.GenerateId()
@@ -71,7 +71,7 @@ func BenchmarkGenerateId(b *testing.B) {
 	}
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := New(repo, logger, event)
 
 	// Сбрасываем таймер

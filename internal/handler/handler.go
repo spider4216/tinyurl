@@ -224,10 +224,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url)); err != nil {
-		h.logger.Error("cannot audit", zap.Error(err))
-		return
-	}
+	h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -286,10 +283,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	// Судя по профилированию так быстрее
 	full := h.conf.BaseUrl + "/" + id
 
-	if err := h.service.AuditNotify(audit.ShortenAction, userId, string(url)); err != nil {
-		h.logger.Error("cannot audit", zap.Error(err))
-		return
-	}
+	h.service.AuditNotify(audit.ShortenAction, userId, string(url))
 
 	w.Header().Set("Content-Type", "plain/text")
 
@@ -338,10 +332,7 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.AuditNotify(audit.FollowAction, "", url); err != nil {
-		h.logger.Error("cannot audit", zap.Error(err))
-		return
-	}
+	h.service.AuditNotify(audit.FollowAction, "", url)
 
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)

@@ -163,7 +163,7 @@ func (s Service) IsErrAsDuplicate(err error) bool {
 }
 
 // AuditNotify метод аудита. Оповещает всех подписчиков о событии аудита.
-func (s Service) AuditNotify(action audit.AuditAction, userID string, url string) error {
+func (s Service) AuditNotify(action audit.AuditAction, userID string, url string) {
 	s.logger.Debug("Audit notify with action ", action)
 
 	n := audit.Body{
@@ -173,5 +173,5 @@ func (s Service) AuditNotify(action audit.AuditAction, userID string, url string
 		URL:    url,
 	}
 
-	return s.audit.Notify(n)
+	s.audit.Notify(n)
 }

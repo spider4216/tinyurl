@@ -2,10 +2,10 @@ package audit
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +30,10 @@ func (aso *auditSliceObserver) Update(data Body) error {
 }
 
 func TestAudit(t *testing.T) {
-	event := NewAuditEvent()
+	logger, err := logger.InitZap("debug")
+	require.NoError(t, err)
+
+	event := NewAuditEvent(logger)
 
 	ob := &auditSliceObserver{}
 
@@ -43,8 +46,7 @@ func TestAudit(t *testing.T) {
 		URL:    "http://test.loc",
 	}
 
-	err := event.Notify(data)
-	require.NoError(t, err)
+	event.Notify(data)
 
 	assert.Len(t, ob.Data, 1)
 	raw := ob.Data[0]
@@ -58,8 +60,10 @@ func TestAudit(t *testing.T) {
 }
 
 func ExampleAuditEvent_Notify() {
+	logger, _ := logger.InitZap("debug")
+
 	// Создаем событие
-	event := NewAuditEvent()
+	event := NewAuditEvent(logger)
 
 	// Готовим Observer в котором фигурирует логика оповещения
 	// Можно создать свой Observer и реализовать свою логику, например
@@ -78,9 +82,5 @@ func ExampleAuditEvent_Notify() {
 		URL:    "http://test.loc",
 	}
 
-	if err := event.Notify(data); err != nil {
-		// Обработать ошибку, например залогировать
-	}
-
-	fmt.Println("Оповещение прошло успешно")
+	event.Notify(data)
 }

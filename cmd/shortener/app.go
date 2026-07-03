@@ -147,7 +147,7 @@ func (app *app) initConfig() error {
 }
 
 func (app *app) initAudit() error {
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(app.logger)
 
 	if app.cfg.AuditFile != "" {
 		ob, err := audit.NewAuditFileObserver(app.cfg.AuditFile, app.logger)

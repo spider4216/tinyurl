@@ -31,7 +31,7 @@ func prepateHandler(store storage.Storage) Handler {
 
 	r := repository.New(store)
 	logger, err := logger.InitZap("debug")
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	s := service.New(r, logger, event)
 	if err != nil {
 		panic("cannot prepare handler")
@@ -88,7 +88,7 @@ func TestGetShortenUrl(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		event := audit.NewAuditEvent()
+		event := audit.NewAuditEvent(logger)
 		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
@@ -155,7 +155,7 @@ func ExampleHandler_GetShortenUrl() {
 	}
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	s := service.New(repo, logger, event)
 	if err != nil {
 		panic("cannot prepare handler")
@@ -220,7 +220,7 @@ func BenchmarkGenerateId(b *testing.B) {
 	h := prepateHandler(store)
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := service.New(repo, logger, event)
 
 	ctx := service.SetUserIdToCtx(r.Context(), "qwerty999")
@@ -285,7 +285,7 @@ func TestGenerateId(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		event := audit.NewAuditEvent()
+		event := audit.NewAuditEvent(logger)
 		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
@@ -357,7 +357,7 @@ func TestUrls(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		event := audit.NewAuditEvent()
+		event := audit.NewAuditEvent(logger)
 		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
@@ -446,7 +446,7 @@ func TestGetUrl(t *testing.T) {
 			r.SetPathValue("id", tc.id)
 
 			repo := repository.New(store)
-			event := audit.NewAuditEvent()
+			event := audit.NewAuditEvent(logger)
 			service := service.New(repo, logger, event)
 
 			ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
@@ -514,7 +514,7 @@ func BenchmarkGetUrls(b *testing.B) {
 	}
 
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := service.New(repo, logger, event)
 
 	// Сбрасываем таймер
@@ -596,7 +596,7 @@ func TestGetUrls(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
 		repo := repository.New(store)
-		event := audit.NewAuditEvent()
+		event := audit.NewAuditEvent(logger)
 		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)

@@ -21,7 +21,7 @@ const (
 
 type Publisher interface {
 	Register(ob Observer)
-	Notify(data Body) error
+	Notify(data Body)
 }
 
 type Observer interface {
@@ -31,11 +31,13 @@ type Observer interface {
 
 type AuditEvent struct {
 	Observers map[string]Observer
+	logger    *zap.SugaredLogger
 }
 
-func NewAuditEvent() *AuditEvent {
+func NewAuditEvent(logger *zap.SugaredLogger) *AuditEvent {
 	return &AuditEvent{
 		Observers: make(map[string]Observer),
+		logger:    logger,
 	}
 }
 
@@ -139,12 +141,16 @@ func (ae *AuditEvent) Register(o Observer) {
 	ae.Observers[o.GetID()] = o
 }
 
-func (ae *AuditEvent) Notify(data Body) error {
+func (ae *AuditEvent) Notify(data Body) {
 	for _, o := range ae.Observers {
-		if err := o.Update(data); err != nil {
-			return err
-		}
+		// Каждый Observer в отдельном потоке
+		go func() {
+			ae.logger.Debugf("Run audit observer: %s", o.GetID())
+			if err := o.Update(data); err != nil {
+				// Поскольку observer вспомогательный, если есть ошибка
+				// просто ее логирую
+				ae.logger.Warnf("Something went wrong with observer %s: %s", o.GetID(), err)
+			}
+		}()
 	}
-
-	return nil
 }

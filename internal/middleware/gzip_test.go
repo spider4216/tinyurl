@@ -27,7 +27,7 @@ func TestGzip(t *testing.T) {
 	store, err := storage.New(storage.MapDriver, cfg, logger)
 	require.NoError(t, err)
 	repo := repository.New(store)
-	event := audit.NewAuditEvent()
+	event := audit.NewAuditEvent(logger)
 	service := service.New(repo, logger, event)
 
 	m := New(logger, cfg, service)
