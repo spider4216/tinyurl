@@ -232,7 +232,7 @@ func BenchmarkGenerateId(b *testing.B) {
 	b.ResetTimer()
 
 	b.Run("GenerateId", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			h.GenerateId(w, r)
 			res := w.Result()
 
@@ -521,7 +521,7 @@ func BenchmarkGetUrls(b *testing.B) {
 	b.ResetTimer()
 
 	b.Run("GetUrlsBatch", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			r := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body))
 			ctx := service.SetUserIdToCtx(r.Context(), "qwerty12123123")
 			ctx = service.SetIsSignValidToCtx(ctx, true)

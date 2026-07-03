@@ -78,7 +78,7 @@ func BenchmarkGenerateId(b *testing.B) {
 	b.ResetTimer()
 
 	b.Run("GenerateShortURLID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			service.GenerateId()
 		}
 	})
