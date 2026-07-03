@@ -48,6 +48,8 @@ func TestAudit(t *testing.T) {
 
 	event.Notify(data)
 
+	time.Sleep(500 * time.Microsecond)
+
 	assert.Len(t, ob.Data, 1)
 	raw := ob.Data[0]
 
