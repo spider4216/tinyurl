@@ -210,8 +210,6 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
-	// Судя по профилированию так быстрее
 	full := h.conf.BaseUrl + "/" + id
 
 	resp := models.ShortenResp{
@@ -279,8 +277,6 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
-	// Судя по профилированию так быстрее
 	full := h.conf.BaseUrl + "/" + id
 
 	h.service.AuditNotify(audit.ShortenAction, userId, string(url))

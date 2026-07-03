@@ -9,8 +9,6 @@ func (h Handler) MapGenUrlsResp(urls []service.UrlsIds, baseUrl string) []models
 	res := make([]models.ShortenBatchResp, 0, len(urls))
 
 	for _, url := range urls {
-		// full := fmt.Sprintf("%s/%s", baseUrl, url.Short)
-		// Судя по профилировщику так чуть быстрее должно быть
 		full := baseUrl + "/" + url.Short
 
 		v := models.ShortenBatchResp{
