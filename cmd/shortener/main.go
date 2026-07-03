@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
@@ -58,7 +57,7 @@ func main() {
 	// Run profile server
 	go func() {
 		if err := http.ListenAndServe(app.cfg.ProfileHost, nil); err != nil {
-			app.logger.Fatalf("Profile server error", zap.Error(err))
+			app.logger.Fatalf("Profile server error: %s", err)
 		}
 	}()
 

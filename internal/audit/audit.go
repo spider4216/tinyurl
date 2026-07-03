@@ -3,7 +3,6 @@ package audit
 import (
 	"encoding/json"
 	"os"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
@@ -39,10 +38,10 @@ func NewAuditEvent() *AuditEvent {
 }
 
 type Body struct {
-	TS     time.Time
-	Action AuditAction
-	UserID string
-	URL    string
+	TS     int64       `json:"ts"`
+	Action AuditAction `json:"action"`
+	UserID string      `json:"user_id"`
+	URL    string      `json:"url"`
 }
 
 type AuditFileObserver struct {

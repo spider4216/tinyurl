@@ -167,7 +167,7 @@ func (s Service) AuditNotify(action audit.AuditAction, userID string, url string
 	s.logger.Debug("Audit notify with action ", action)
 
 	n := audit.Body{
-		TS:     time.Now(),
+		TS:     time.Now().Unix(),
 		Action: action,
 		UserID: userID,
 		URL:    url,
