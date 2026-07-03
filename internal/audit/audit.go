@@ -2,6 +2,7 @@ package audit
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -121,9 +122,17 @@ func (aso *AuditServerObserver) GetID() string {
 func (aso *AuditServerObserver) Update(data Body) error {
 	aso.Logger.Debug("Update in audit server observer")
 
-	_, err := aso.Cli.R().SetBody(data).Post(aso.URL)
+	resp, err := aso.Cli.R().SetBody(data).Post(aso.URL)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	if resp.IsError() {
+		return fmt.Errorf("Audit server error. Code: %v", resp.StatusCode())
+	}
+
+	return nil
 }
 
 func (ae *AuditEvent) Register(o Observer) {
