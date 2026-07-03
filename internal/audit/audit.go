@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
@@ -13,10 +14,13 @@ import (
 type AuditAction string
 
 const (
-	AuditFileObserverID   string      = "audit_file_onserver"
-	AuditServerObserverID string      = "audit_server_observer"
-	ShortenAction         AuditAction = "shorten"
-	FollowAction          AuditAction = "follow"
+	AuditFileObserverID   string        = "audit_file_onserver"
+	AuditServerObserverID string        = "audit_server_observer"
+	ShortenAction         AuditAction   = "shorten"
+	FollowAction          AuditAction   = "follow"
+	retryCount            int           = 3
+	retryWait             time.Duration = 500 * time.Millisecond
+	retryMaxWait          time.Duration = 2 * time.Second
 )
 
 type Publisher interface {
@@ -107,7 +111,19 @@ func NewAuditServerObserver(host string, url string, logger *zap.SugaredLogger) 
 
 	cli := resty.New().
 		SetBaseURL(host).
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetRetryCount(retryCount).
+		SetRetryWaitTime(retryWait).
+		SetRetryMaxWaitTime(retryMaxWait).
+		SetRetryAfter(func(c *resty.Client, r *resty.Response) (time.Duration, error) {
+			logger.Info(
+				"Retry server audit: attempt %d, status: %d",
+				r.Request.Attempt,
+				r.StatusCode(),
+			)
+
+			return 0, nil
+		})
 
 	return &AuditServerObserver{
 		ID:     AuditServerObserverID,
