@@ -10,7 +10,7 @@ type UrlsIds struct {
 }
 
 func (s Service) MapForMapUrlIds(m []models.ShortenBatchReq, userId string) []UrlsIds {
-	var urls []UrlsIds
+	urls := make([]UrlsIds, 0, len(m))
 
 	for _, item := range m {
 		u := UrlsIds{

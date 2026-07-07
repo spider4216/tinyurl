@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
 type recordSlice struct {
@@ -20,12 +21,14 @@ type recordSlice struct {
 	IsDeleted string `json:"is_deleted"`
 }
 
+// MapStorage хранилище, где данные складываются в Slice.
 type MapStorage struct {
 	store  []string
 	mu     sync.RWMutex
 	logger *zap.SugaredLogger
 }
 
+// NewMapStorage создание хранилища основанном на Slice.
 func NewMapStorage(logger *zap.SugaredLogger) *MapStorage {
 	return &MapStorage{
 		store:  []string{},

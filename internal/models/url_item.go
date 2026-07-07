@@ -1,5 +1,6 @@
 package models
 
+// UrlItem единая модель на которую мапятся данные из разных Store.
 type UrlItem struct {
 	ShortUrl    string `json:"short_url"`
 	OriginarUrl string `json:"original_url"`

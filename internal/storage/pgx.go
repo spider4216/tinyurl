@@ -5,8 +5,9 @@ import (
 	"database/sql"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
 const Table = "urls"
@@ -18,11 +19,13 @@ type recordPgx struct {
 	UserId      string `json:"user_id"`
 }
 
+// PgxStorage хранилище где данные складываются в БД PostgreSQL.
 type PgxStorage struct {
 	Con    *sql.DB
 	logger *zap.SugaredLogger
 }
 
+// NewPgxStorage создание хранилища с БД PostgreSQL.
 func NewPgxStorage(con string, logger *zap.SugaredLogger) (*PgxStorage, error) {
 	db, err := sql.Open(PostgresDriver, con)
 	if err != nil {

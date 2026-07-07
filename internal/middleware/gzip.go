@@ -10,6 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// Gzip прослойка по сджатию данных перед ответом.
+// Производит сжатие если клиент понимает gzip формат.
+// Чтобы произошло сжатие нужно чтобы клиент передал Accept-Encoding:gzip.
 func (m Middleware) Gzip(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ow := w

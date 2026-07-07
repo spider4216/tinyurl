@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+
 	"github.com/spider4216/tinyurl/internal/config/db"
 )
 
@@ -20,8 +21,11 @@ type Config struct {
 	IdleTimeout   time.Duration `env:"IDLE_TIMEOUT" envDefault:"30s"`
 	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048"`
 	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h"`
-	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty"` // Ключ для подписи значения куки
-	DeleteMaxPool int           `env:"DEL_MAX_POOL" envDefault:"10"` // Кол-во одновременно вып-мых задач на удаление
+	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty"`    // Ключ для подписи значения куки
+	DeleteMaxPool int           `env:"DEL_MAX_POOL" envDefault:"10"`    // Кол-во одновременно вып-мых задач на удаление
+	AuditFile     string        `env:"AUDIT_FILE"`                      // Аудит в файл
+	AuditURL      string        `env:"AUDIT_URL"`                       // Аудит на сервер по HTTP
+	ProfileHost   string        `env:"PROFILE_HOST" envDefault:":6060"` // Хост для профилирования
 }
 
 func New() (*Config, error) {

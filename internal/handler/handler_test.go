@@ -11,14 +11,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/spider4216/tinyurl/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func prepateHandler(store storage.Storage) Handler {
@@ -29,7 +31,8 @@ func prepateHandler(store storage.Storage) Handler {
 
 	r := repository.New(store)
 	logger, err := logger.InitZap("debug")
-	s := service.New(r, logger)
+	event := audit.NewAuditEvent(logger)
+	s := service.New(r, logger, event)
 	if err != nil {
 		panic("cannot prepare handler")
 	}
@@ -85,7 +88,8 @@ func TestGetShortenUrl(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent(logger)
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -122,6 +126,121 @@ func TestGetShortenUrl(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ExampleHandler_GetShortenUrl() {
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+
+	logger, err := logger.InitZap("debug")
+	if err != nil {
+		panic(err)
+	}
+	req := models.ShortenReq{
+		Url: "http://mysite.loc/",
+	}
+
+	reqJson, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(reqJson))
+	w := httptest.NewRecorder()
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+	if err != nil {
+		panic(err)
+	}
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent(logger)
+	s := service.New(repo, logger, event)
+	if err != nil {
+		panic("cannot prepare handler")
+	}
+
+	h := New(cfg, logger, s)
+
+	ctx := s.SetUserIdToCtx(r.Context(), "q1")
+	ctx = s.SetIsSignValidToCtx(ctx, true)
+
+	r = r.WithContext(ctx)
+
+	h.GetShortenUrl(w, r)
+
+	res := w.Result()
+
+	if res.Header.Get("Content-Type") != "application/json" {
+		panic("Response content type problem")
+	}
+
+	body, err := io.ReadAll(res.Body)
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			logger.Warn("Error closing")
+		}
+	}()
+
+	if err != nil {
+		panic(err)
+	}
+
+	resp := models.ShortenResp{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.Result == "" {
+		panic("response empty")
+	}
+}
+
+func BenchmarkGenerateId(b *testing.B) {
+	cfg, err := config.New()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	logger, err := logger.InitZap("info")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("http://mysite.loc/")))
+	w := httptest.NewRecorder()
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	h := prepateHandler(store)
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent(logger)
+	service := service.New(repo, logger, event)
+
+	ctx := service.SetUserIdToCtx(r.Context(), "qwerty999")
+	ctx = service.SetIsSignValidToCtx(ctx, true)
+
+	r = r.WithContext(ctx)
+
+	// Сбрасываем таймер
+	b.ResetTimer()
+
+	b.Run("GenerateId", func(b *testing.B) {
+		for b.Loop() {
+			h.GenerateId(w, r)
+			res := w.Result()
+
+			if res.StatusCode != http.StatusCreated {
+				b.Fatal("created status fail")
+			}
+		}
+	})
 }
 
 func TestGenerateId(t *testing.T) {
@@ -166,7 +285,8 @@ func TestGenerateId(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent(logger)
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -237,7 +357,8 @@ func TestUrls(t *testing.T) {
 		h := prepateHandler(store)
 
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent(logger)
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -325,7 +446,8 @@ func TestGetUrl(t *testing.T) {
 			r.SetPathValue("id", tc.id)
 
 			repo := repository.New(store)
-			service := service.New(repo, logger)
+			event := audit.NewAuditEvent(logger)
+			service := service.New(repo, logger, event)
 
 			ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 			ctx = service.SetIsSignValidToCtx(ctx, true)
@@ -350,6 +472,70 @@ func TestGetUrl(t *testing.T) {
 			assert.Equal(t, tc.want.status, respGet.StatusCode)
 		})
 	}
+}
+
+func BenchmarkGetUrls(b *testing.B) {
+	cfg, err := config.New()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	logger, err := logger.InitZap("debug")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	store, err := storage.New(storage.MapDriver, cfg, logger)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	type urlsSrc struct {
+		CorrelationId string `json:"correlation_id"`
+		OriginalUrl   string `json:"original_url"`
+	}
+
+	urls := []urlsSrc{
+		{
+			CorrelationId: "abc1",
+			OriginalUrl:   "http://mysite.loc",
+		},
+		{
+			CorrelationId: "abc2",
+			OriginalUrl:   "http://mysite2.loc",
+		},
+	}
+
+	h := prepateHandler(store)
+
+	body, err := json.Marshal(urls)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	repo := repository.New(store)
+	event := audit.NewAuditEvent(logger)
+	service := service.New(repo, logger, event)
+
+	// Сбрасываем таймер
+	b.ResetTimer()
+
+	b.Run("GetUrlsBatch", func(b *testing.B) {
+		for b.Loop() {
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body))
+			ctx := service.SetUserIdToCtx(r.Context(), "qwerty12123123")
+			ctx = service.SetIsSignValidToCtx(ctx, true)
+			r = r.WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			h.GetShortenUrls(w, r)
+			res := w.Result()
+
+			if res.StatusCode != http.StatusCreated {
+				b.Fatal("created status fail")
+			}
+		}
+	})
 }
 
 func TestGetUrls(t *testing.T) {
@@ -410,7 +596,8 @@ func TestGetUrls(t *testing.T) {
 
 		r := httptest.NewRequest(tc.method, "/api/shorten/batch", bytes.NewBuffer(body))
 		repo := repository.New(store)
-		service := service.New(repo, logger)
+		event := audit.NewAuditEvent(logger)
+		service := service.New(repo, logger, event)
 
 		ctx := service.SetUserIdToCtx(r.Context(), tc.userId)
 		ctx = service.SetIsSignValidToCtx(ctx, true)

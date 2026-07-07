@@ -8,19 +8,21 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strconv"
 	"sync"
 
-	"github.com/spider4216/tinyurl/internal/models"
 	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/models"
 )
 
+// FileStorage хранит данные в файле.
 type FileStorage struct {
 	file   *os.File
 	mu     sync.RWMutex
 	logger *zap.SugaredLogger
 }
 
+// NewFileStorage функция создания хранилища на файле.
 func NewFileStorage(filename string, logger *zap.SugaredLogger) (*FileStorage, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
@@ -37,7 +39,7 @@ type recordFile struct {
 	Origin    string `json:"original_url"`
 	Short     string `json:"short_url"`
 	UserId    string `json:"user_id"`
-	IsDeleted string `json:"is_deleted"`
+	IsDeleted bool   `json:"is_deleted"`
 }
 
 func (fs *FileStorage) Ping(ctx context.Context) error {
@@ -79,7 +81,7 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 
 	// Произвожу поиск
 	for scanner.Scan() {
-		rec := map[string]string{}
+		rec := recordFile{}
 
 		line := scanner.Bytes()
 
@@ -87,21 +89,9 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 			continue
 		}
 
-		sourceId, ok := rec["user_id"]
-
-		if !ok {
-			continue
-		}
-
-		short, ok := rec["short_url"]
-
-		if !ok {
-			continue
-		}
-
-		if sourceId == userId && slices.Contains(ids, short) {
+		if rec.UserId == userId && slices.Contains(ids, rec.Short) {
 			// Обновляем is_deleted
-			rec["is_deleted"] = "true"
+			rec.IsDeleted = true
 		}
 
 		updLine, err := json.Marshal(rec)
@@ -169,15 +159,10 @@ func (fs *FileStorage) GetByUserId(ctx context.Context, userId string) ([]models
 			continue
 		}
 
-		b, err := strconv.ParseBool(item.IsDeleted)
-		if err != nil {
-			return nil, err
-		}
-
 		urls = append(urls, models.UrlItem{
 			OriginarUrl: item.Origin,
 			ShortUrl:    item.Short,
-			IsDeleted:   b,
+			IsDeleted:   item.IsDeleted,
 			UserId:      item.UserId,
 		})
 	}
@@ -211,15 +196,10 @@ func (fs *FileStorage) GetByOrigin(ctx context.Context, origin string) (*models.
 			continue
 		}
 
-		b, err := strconv.ParseBool(item.IsDeleted)
-		if err != nil {
-			return nil, err
-		}
-
 		return &models.UrlItem{
 			OriginarUrl: item.Origin,
 			ShortUrl:    item.Short,
-			IsDeleted:   b,
+			IsDeleted:   item.IsDeleted,
 			UserId:      item.UserId,
 		}, nil
 	}
@@ -253,15 +233,10 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Ur
 			continue
 		}
 
-		b, err := strconv.ParseBool(item.IsDeleted)
-		if err != nil {
-			return nil, err
-		}
-
 		return &models.UrlItem{
 			OriginarUrl: item.Origin,
 			ShortUrl:    item.Short,
-			IsDeleted:   b,
+			IsDeleted:   item.IsDeleted,
 			UserId:      item.UserId,
 		}, nil
 	}
@@ -281,7 +256,7 @@ func (fs *FileStorage) CreateUrl(ctx context.Context, data models.InsertData) er
 		Origin:    data.Value,
 		Short:     data.Key,
 		UserId:    data.UserId,
-		IsDeleted: "false",
+		IsDeleted: false,
 	}
 
 	b, err := json.Marshal(item)

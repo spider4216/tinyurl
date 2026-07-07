@@ -16,6 +16,8 @@ type Flags struct {
 	LogLvl        string
 	FileStorePath string
 	DbCon         string
+	AuditFile     string
+	AuditURL      string
 }
 
 func NewFlags() Flags {
@@ -28,6 +30,8 @@ func (f *Flags) Init() error {
 	logLvl := flag.String("l", defLogLvl, "Log level: debug, info, warning, error, fatal")
 	fileStorePath := flag.String("f", "", "File store path")
 	dbCon := flag.String("d", "", "DB conection string")
+	auditFile := flag.String("audit-file", "", "Audit to file")
+	auditURL := flag.String("audit-url", "", "Audit to HTTP server")
 
 	flag.Parse()
 
@@ -36,6 +40,8 @@ func (f *Flags) Init() error {
 	f.LogLvl = *logLvl
 	f.FileStorePath = *fileStorePath
 	f.DbCon = *dbCon
+	f.AuditFile = *auditFile
+	f.AuditURL = *auditURL
 
 	return nil
 }

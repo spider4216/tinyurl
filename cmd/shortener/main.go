@@ -5,10 +5,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
+
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -21,7 +24,7 @@ func main() {
 	app.logger.Debug("Config: ", app.cfg)
 
 	repo := repository.New(app.store)
-	service := service.New(repo, app.logger)
+	service := service.New(repo, app.logger, app.audit)
 	handler := handler.New(app.cfg, app.logger, service)
 	middlewares := middleware.New(app.logger, app.cfg, service)
 
@@ -49,11 +52,18 @@ func main() {
 		IdleTimeout:  app.cfg.IdleTimeout,
 	}
 
-	log.Printf("Listen on: %s", app.cfg.ServerAddress)
+	app.logger.Infof("Listen profile on: %s", app.cfg.ProfileHost)
+
+	// Run profile server
+	go func() {
+		if err := http.ListenAndServe(app.cfg.ProfileHost, nil); err != nil {
+			app.logger.Fatalf("Profile server error: %s", err)
+		}
+	}()
+
+	app.logger.Infof("Listen on: %s", app.cfg.ServerAddress)
 
 	if err := srv.ListenAndServe(); err != nil {
 		app.logger.Fatalf("Server error: %s", err)
 	}
-
-	app.logger.Infof("Starting server on %s", app.cfg.ServerAddress)
 }

@@ -1,44 +1,149 @@
-# go-musthave-shortener-tpl
+# Результат профилирования через pprof
 
-Шаблон репозитория для трека «Сервис сокращения URL».
-
-## Начало работы
-
-1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере.
-2. В корне репозитория выполните команду `go mod init <name>` (где `<name>` — адрес вашего репозитория на GitHub без префикса `https://`) для создания модуля.
-
-## Обновление шаблона
-
-Чтобы иметь возможность получать обновления автотестов и других частей шаблона, выполните команду:
+## Условия
+Профилирование проводилось для следующиъ эндпоинтов
 
 ```
-git remote add -m v2 template https://github.com/Yandex-Practicum/go-musthave-shortener-tpl.git
+POST /                  - генерация короткого URL 1
+POST /api/shorten       - генерация короткого URL 2
+POST /api/shorten/batch - генерация коротких URL
+GET  /{id}              - получение короткого URL (с драйвером файл)
 ```
 
-Для обновления кода автотестов выполните команду:
+Были сняты snapshot до рефакторинга и после. Сначала была создана нагрузка через hey
 
 ```
-git fetch template && git checkout template/v2 .github
+hey -m POST -d "https://abc1.loc/" -z 5s http://127.0.0.1:8080
+hey -m POST -H "Accept: application/json" -d "{\"url\": \"http://bla.loc\"}" -z 5s http://127.0.0.1:8080/api/shorten 
+hey -m POST -H "Accept: application/json" -d "[{\"correlation_id\": \"abc1\",\"original_url\": \"http://abb1.loc\"},{\"correlation_id\": \"abc2\",\"original_url\": \"http://abb2.loc\"}]
+" -z 5s http://127.0.0.1:8080/api/shorten/batch
+hey -m POST -d "https://google.com/" -z 1s http://127.0.0.1:8080
+hey -z 5s http://127.0.0.1:8080/I4wLZred
 ```
 
-Затем добавьте полученные изменения в свой репозиторий.
+Затем снят snapshot
 
-## Запуск автотестов
+```
+curl -sK -v http://localhost:6060/debug/pprof/heap > base.pprof
+```
 
-Для успешного запуска автотестов называйте ветки `iter<number>`, где `<number>` — порядковый номер инкремента. Например, в ветке с названием `iter4` запустятся автотесты для инкрементов с первого по четвёртый.
+И уже после выполнил профилирование
 
-При мёрже ветки с инкрементом в основную ветку `main` будут запускаться все автотесты.
+```
+go tool pprof -http=":9090" -seconds=30 profiles/base.pprof
+```
 
-Подробнее про локальный и автоматический запуск читайте в [README автотестов](https://github.com/Yandex-Practicum/go-autotests).
+Затем сделал рефакторинг, и повторно выполнил условтя. После второг оснапшота сравнил их
+```
+go tool pprof -http=:9090 -diff_base=profiles/base.pprof profiles/result.pprof
+```
 
-## Структура проекта
+Проверку проводил на предмет alloc_space
 
-Приведённая в этом репозитории структура проекта является рекомендуемой, но не обязательной.
+## Проблемные места
 
-Это лишь пример организации кода, который поможет вам в реализации сервиса.
+### Получение короткого URL
 
-При необходимости можно вносить изменения в структуру проекта, использовать любые библиотеки и предпочитаемые структурные паттерны организации кода приложения, например:
-- **DDD** (Domain-Driven Design)
-- **Clean Architecture**
-- **Hexagonal Architecture**
-- **Layered Architecture**
+Поскольку профилирование проводилось с использованием сервисного драйвера File, удалось обнаружить неоптимальные решения.
+
+У основной структуры записи данных из файла был изменен тип одног ополя
+
+```
+-       IsDeleted string `json:"is_deleted"`
++       IsDeleted bool   `json:"is_deleted"`
+```
+
+И убран везде парсинг булева значения
+
+```
+-               b, err := strconv.ParseBool(item.IsDeleted)
+-               if err != nil {
+-                       return nil, err
+-               }
+```
+
+Также местами была заменена мапа на структуру
+
+```
+-               rec := map[string]string{}
++               rec := recordFile{}
+```
+
+При сравнении профилей удалось заметить значительное улучшение в контексте alloc_space. storage.GetByShort стал прогонять через себя значительно меньше памяти -20.50MB
+
+### генерация короткого URL 1
+
+Для формирования полной ссылки использовался fmt.Sprintf
+
+```
+full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
+```
+
+Планировщик в режиме alloc_space показал не лучший резулитат. 
+
+После изменения на
+
+```
+full := h.conf.BaseUrl + "/" + id
+```
+
+Есть небольшие улучшения: diff -1.50MB
+
+### Маппер MapGenUrlsResp
+
+В мапере MapGenUrlsResp вместо
+
+```
+res := []models.ShortenBatchResp{}
+```
+
+Я ограничил емкость через
+
+```
+res := make([]models.ShortenBatchResp, 0, len(urls))
+```
+
+Как я понял, этот подход через append не должен вызывать realloc
+
+Также в маппере я заменил формирование ссылки с
+
+```
+full := fmt.Sprintf("%s/%s", baseUrl, url.Short)
+```
+
+на
+
+```
+full := baseUrl + "/" + url.Short
+```
+
+Проведя diff заметил небольшое улучшение в -1MB
+
+## Результат
+
+### Команда
+
+```
+go tool pprof -sample_index=alloc_space -top -diff_base=profiles/base.pprof profiles/result.pprof
+```
+
+### Результат с фильтром
+
+```
+...
+-20.50MB  0.04%  0.58%      -31MB  0.06%  github.com/spider4216/tinyurl/internal/storage.(*FileStorage).GetByShort             
+-1.50MB 0.0029%  0.61%  1737.13MB  3.37%  github.com/spider4216/tinyurl/internal/handler.Handler.GenerateId         
+-1MB 0.0019%  0.61%       -2MB 0.0039%  github.com/spider4216/tinyurl/internal/service.Service.MapForMapUrlIds        
+-1MB 0.0019%  0.61%    -5.50MB 0.011%  github.com/spider4216/tinyurl/internal/handler.Handler.MapGenUrlsResp
+-1MB 0.0019%  0.61% -2812.41MB  5.46%  github.com/spider4216/tinyurl/internal/handler.Handler.GetShortenUrls
+...
+```
+
+# Бенчмарки
+
+Бенчмарки были написаны на два основных метода генерации коротких URL
+
+```
+POST /                  - генерация короткого URL
+POST /api/shorten/batch - генерация коротких URL
+```

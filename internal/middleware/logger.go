@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// WithLogging прослойка отвечающая за логирования запроса.
+// Лог содержит следующие поля:
+//   - url      - URL запроса
+//   - method   - HTTP метод запроса
+//   - duration - Продолжительность выполнения запроса
+//   - status   - HTTP статус ответа
+//   - size     - Размер ответа в байтах
 func (m Middleware) WithLogging(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

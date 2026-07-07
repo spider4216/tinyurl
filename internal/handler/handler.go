@@ -4,16 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
+	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/service"
-	"go.uber.org/zap"
 )
 
+// Handler основной обработчик запросов.
+type Handler struct {
+	conf         *config.Config
+	service      service.Service
+	logger       *zap.SugaredLogger
+	delSemaphore chan struct{}
+}
+
+// New конструктор обработчика. Зависим от:
+// - конфигурации.
+// - логгера.
+// - сервиса.
 func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
 	return Handler{
 		conf:         conf,
@@ -23,13 +36,7 @@ func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service
 	}
 }
 
-type Handler struct {
-	conf         *config.Config
-	service      service.Service
-	logger       *zap.SugaredLogger
-	delSemaphore chan struct{}
-}
-
+// DeleteUrls удаление множества сокращенных URL.
 func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.conf.MaxBodySize)
 
@@ -99,6 +106,7 @@ func (h Handler) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// GetShortenUrls сокращение множества URL.
 func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -150,6 +158,7 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetShortenUrl сокращение URL.
 func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -201,7 +210,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
+	full := h.conf.BaseUrl + "/" + id
 
 	resp := models.ShortenResp{
 		Result: full,
@@ -213,6 +222,8 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.service.AuditNotify(audit.ShortenAction, userId, string(req.Url))
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -221,6 +232,7 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GenerateId сокращение URL.
 func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -265,7 +277,9 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	full := fmt.Sprintf("%s/%s", h.conf.BaseUrl, id)
+	full := h.conf.BaseUrl + "/" + id
+
+	h.service.AuditNotify(audit.ShortenAction, userId, string(url))
 
 	w.Header().Set("Content-Type", "plain/text")
 
@@ -276,6 +290,7 @@ func (h Handler) GenerateId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUrl получение сокращенного URL.
 func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -313,11 +328,16 @@ func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userId := h.service.GetUserIdFromCtx(ctx)
+
+	h.service.AuditNotify(audit.FollowAction, userId, url)
+
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// Urls получение всех сокращенных URL пользователя.
 func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
@@ -367,6 +387,7 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Ping проверка доступности источника данных.
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 
