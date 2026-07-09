@@ -59,6 +59,9 @@ func main() {
 		// Внешние анализаторы
 		nilerr.Analyzer,
 		durationcheck.Analyzer,
+
+		// Мой пакет
+		OsExitAnalyzer,
 	}
 
 	STList := map[string]bool{
