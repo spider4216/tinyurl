@@ -22,6 +22,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unmarshal"
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
+	"honnef.co/go/tools/simple"
 	"honnef.co/go/tools/staticcheck"
 	"honnef.co/go/tools/stylecheck"
 )
@@ -59,6 +60,10 @@ func main() {
 		"ST1008": true,
 	}
 
+	SList := map[string]bool{
+		"S1002": true,
+	}
+
 	// Статические анализаторы класса SA
 	for _, v := range staticcheck.Analyzers {
 		checkers = append(checkers, v.Analyzer)
@@ -68,6 +73,14 @@ func main() {
 	for _, v := range stylecheck.Analyzers {
 		// Добавляем указанные в справочнике анализаторы
 		if STList[v.Analyzer.Name] {
+			checkers = append(checkers, v.Analyzer)
+		}
+	}
+
+	// Статические анализаторы класса S
+	for _, v := range simple.Analyzers {
+		// Добавляем указанные в справочнике анализаторы
+		if SList[v.Analyzer.Name] {
 			checkers = append(checkers, v.Analyzer)
 		}
 	}
