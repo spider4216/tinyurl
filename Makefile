@@ -49,3 +49,6 @@ doc:
 
 doc-open:
 	firefox http://127.0.0.1:8080/pkg/github.com/spider4216/tinyurl/?m=all
+
+mcheck:
+	go run ./cmd/staticclient/main.go ./...
