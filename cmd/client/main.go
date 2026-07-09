@@ -62,8 +62,8 @@ func main() {
 	fmt.Println("Статус-код", resp.Status)
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("Error closing body: %s", err.Error())
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("Error closing body: %s", closeErr.Error())
 		}
 	}()
 

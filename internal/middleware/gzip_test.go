@@ -58,8 +58,8 @@ func TestGzip(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				t.Log("cannot close body", err)
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				t.Log("cannot close body", closeErr)
 			}
 		}()
 
@@ -81,7 +81,7 @@ func TestGzip(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		defer func() {
-			if err := resp.Body.Close(); err != nil {
+			if closeErr := resp.Body.Close(); closeErr != nil {
 				t.Log("cannot close body")
 			}
 		}()

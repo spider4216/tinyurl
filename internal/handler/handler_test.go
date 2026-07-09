@@ -106,8 +106,8 @@ func TestGetShortenUrl(t *testing.T) {
 
 				body, err := io.ReadAll(res.Body)
 				defer func() {
-					if err := res.Body.Close(); err != nil {
-						log.Printf("Error closing: %s", err.Error())
+					if closeErr := res.Body.Close(); closeErr != nil {
+						log.Printf("Error closing: %s", closeErr.Error())
 					}
 				}()
 
@@ -178,7 +178,7 @@ func ExampleHandler_GetShortenUrl() {
 
 	body, err := io.ReadAll(res.Body)
 	defer func() {
-		if err := res.Body.Close(); err != nil {
+		if closeErr := res.Body.Close(); closeErr != nil {
 			logger.Warn("Error closing")
 		}
 	}()
@@ -303,8 +303,8 @@ func TestGenerateId(t *testing.T) {
 
 				body, err := io.ReadAll(res.Body)
 				defer func() {
-					if err := res.Body.Close(); err != nil {
-						log.Printf("Error closing: %s", err.Error())
+					if closeErr := res.Body.Close(); closeErr != nil {
+						log.Printf("Error closing: %s", closeErr.Error())
 					}
 				}()
 
@@ -615,8 +615,8 @@ func TestGetUrls(t *testing.T) {
 
 				body, err := io.ReadAll(res.Body)
 				defer func() {
-					if err := res.Body.Close(); err != nil {
-						log.Printf("Error closing: %s", err.Error())
+					if closeErr := res.Body.Close(); closeErr != nil {
+						log.Printf("Error closing: %s", closeErr.Error())
 					}
 				}()
 

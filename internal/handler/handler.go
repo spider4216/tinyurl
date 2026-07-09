@@ -123,8 +123,8 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	req := []models.ShortenBatchReq{}
 
-	if err := json.Unmarshal(body, &req); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if umErr := json.Unmarshal(body, &req); umErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(umErr))
 		return
 	}
 
@@ -137,16 +137,16 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	urls := h.service.MapForMapUrlIds(req, userId)
 
-	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if storeErr := h.service.StoreDataBatch(ctx, urls); storeErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(storeErr))
 		return
 	}
 
 	resp := h.MapGenUrlsResp(urls, h.conf.BaseUrl)
 
-	respJson, err := json.Marshal(resp)
-	if err != nil {
-		h.logger.Error("cannot marshall", zap.Error(err))
+	respJson, mErr := json.Marshal(resp)
+	if mErr != nil {
+		h.logger.Error("cannot marshall", zap.Error(mErr))
 		return
 	}
 
@@ -175,8 +175,8 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 
 	req := models.ShortenReq{}
 
-	if err := json.Unmarshal(body, &req); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if umErr := json.Unmarshal(body, &req); umErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(umErr))
 		return
 	}
 
