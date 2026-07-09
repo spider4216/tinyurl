@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strings"
-
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
@@ -25,6 +23,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
 	"honnef.co/go/tools/staticcheck"
+	"honnef.co/go/tools/stylecheck"
 )
 
 const (
@@ -55,9 +54,20 @@ func main() {
 		unusedresult.Analyzer,
 	}
 
+	STList := map[string]bool{
+		"ST1005": true,
+		"ST1008": true,
+	}
+
 	// Статические анализаторы класса SA
 	for _, v := range staticcheck.Analyzers {
-		if strings.HasPrefix(v.Analyzer.Name, SALyzerPrefix) {
+		checkers = append(checkers, v.Analyzer)
+	}
+
+	// Статические анализаторы класса ST
+	for _, v := range stylecheck.Analyzers {
+		// Добавляем указанные в справочнике анализаторы
+		if STList[v.Analyzer.Name] {
 			checkers = append(checkers, v.Analyzer)
 		}
 	}
