@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/charithe/durationcheck"
 	"github.com/gostaticanalysis/nilerr"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
@@ -57,6 +58,7 @@ func main() {
 
 		// Внешние анализаторы
 		nilerr.Analyzer,
+		durationcheck.Analyzer,
 	}
 
 	STList := map[string]bool{
