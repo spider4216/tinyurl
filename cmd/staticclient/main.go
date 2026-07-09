@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
@@ -22,10 +24,16 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unmarshal"
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
+	"honnef.co/go/tools/staticcheck"
+)
+
+const (
+	SALyzerPrefix string = "SA"
 )
 
 func main() {
 	checkers := []*analysis.Analyzer{
+		// Стандартные анализаторы
 		appends.Analyzer,
 		assign.Analyzer,
 		bools.Analyzer,
@@ -45,6 +53,13 @@ func main() {
 		unmarshal.Analyzer,
 		unreachable.Analyzer,
 		unusedresult.Analyzer,
+	}
+
+	// Статические анализаторы класса SA
+	for _, v := range staticcheck.Analyzers {
+		if strings.HasPrefix(v.Analyzer.Name, SALyzerPrefix) {
+			checkers = append(checkers, v.Analyzer)
+		}
 	}
 
 	multichecker.Main(
