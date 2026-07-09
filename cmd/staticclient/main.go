@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gostaticanalysis/nilerr"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
@@ -53,6 +54,9 @@ func main() {
 		unmarshal.Analyzer,
 		unreachable.Analyzer,
 		unusedresult.Analyzer,
+
+		// Внешние анализаторы
+		nilerr.Analyzer,
 	}
 
 	STList := map[string]bool{
