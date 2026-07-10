@@ -1,3 +1,33 @@
+// multichecker подвергает анализу выбранные файлы проекта.
+// Содержит следующие анализаторы:
+//
+// Стандартные
+//   - appends.Analyzer       // проверяет некорректное использование append
+//   - assign.Analyzer        // проверяет бесполезные присваивания
+//   - bools.Analyzer         // проверяет подозрительные логические выражения
+//   - copylock.Analyzer      // проверяет копирование значений, содержащих блокировки
+//   - defers.Analyzer        // проверяет ошибки при использовании defer
+//   - errorsas.Analyzer      // проверяет корректность вызовов errors.As
+//   - httpresponse.Analyzer  // проверяет ошибки при использовании HTTP ответов
+//   - ifaceassert.Analyzer   // проверяет невозможные типы интерфейсов
+//   - loopclosure.Analyzer   // проверяет захват переменных цикла замыканиями
+//   - lostcancel.Analyzer    // проверяет пропущенные функции отмены context.CancelFunc
+//   - nilfunc.Analyzer       // проверяет бессмысленное сравнение функций с nil
+//   - printf.Analyzer        // проверяет корректность форматирующих вызовов Printf
+//   - scannererr.Analyzer    // проверяет пропущенную проверку ошибки Scanner.Err
+//   - shadow.Analyzer        // проверяет затенение переменных
+//   - sqlrowserr.Analyzer    // проверяет пропущенную проверку ошибки Rows.Err
+//   - structtag.Analyzer     // проверяет корректность тегов структур
+//   - unmarshal.Analyzer     // проверяет передачу некорректных значений в Unmarshal
+//   - unreachable.Analyzer   // проверяет недостижимый код
+//   - unusedresult.Analyzer  // проверяет игнорирование результатов некоторых функций
+//
+// Внешние
+//   - nilerr.Analyzer        // проверяет возврат nil вместо обнаруженной ошибки
+//   - durationcheck.Analyzer // проверяет подозрительные операции с time.Duration
+//
+// Мой анализатор
+//   - OsExitAnalyzer         // проверяет на наличие вызова os.Exit в пакете main функции main
 package main
 
 import (

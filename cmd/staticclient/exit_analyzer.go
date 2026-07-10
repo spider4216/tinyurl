@@ -12,6 +12,8 @@ const (
 	testFile string = ".test"
 )
 
+// OsExitAnalyzer анализатор проверяющий наличие вызова os.Exit
+// В пакете main функции main.
 var OsExitAnalyzer = &analysis.Analyzer{
 	Name: "osexit",
 	Doc:  "check os exit in main package",
