@@ -28,6 +28,11 @@
 //
 // Мой анализатор
 //   - OsExitAnalyzer         // проверяет на наличие вызова os.Exit в пакете main функции main
+//
+// Механизм запуска следующий:
+//
+//	go run ./cmd/staticclient ./...
+//	make mcheck
 package main
 
 import (
