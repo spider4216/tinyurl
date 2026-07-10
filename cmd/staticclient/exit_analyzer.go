@@ -2,8 +2,14 @@ package main
 
 import (
 	"go/ast"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
+)
+
+const (
+	mainPack string = "main"
+	testFile string = ".test"
 )
 
 var OsExitAnalyzer = &analysis.Analyzer{
@@ -17,11 +23,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return nil, nil
 	}
 
+	// Исключаем .test файлы
+	if strings.HasSuffix(pass.Pkg.Path(), testFile) {
+		return nil, nil
+	}
+
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch m := node.(type) {
 			case *ast.FuncDecl:
-				if m.Name.String() == "main" {
+				if m.Name.String() == mainPack {
 					ast.Inspect(m, func(n ast.Node) bool {
 						switch x := n.(type) {
 						case *ast.CallExpr:
