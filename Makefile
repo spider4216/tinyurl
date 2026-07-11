@@ -52,3 +52,6 @@ doc-open:
 
 mcheck:
 	go run ./cmd/staticclient ./...
+
+genreset:
+	go run ./cmd/reset
