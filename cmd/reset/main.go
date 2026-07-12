@@ -256,43 +256,7 @@ func main() {
 							}
 
 							// Поля структуры для генерации
-							var pls []Payload
-
-							// Перебираем поля структуры
-							for _, field := range myStruct.Fields.List {
-								// Для кажого поля своя поезная нагрузка
-								var pl Payload
-								// устанавливаем имя поля
-								// Пока у нас ограничение на структуру с синтаксисом
-								// каждого поле на новой строке, без запятой
-								pl.VarName = field.Names[0].String()
-								// fmt.Println(field.Type)
-
-								fmt.Printf("%T\n", field.Type)
-
-								// log.Println(field.Type)
-								switch t := field.Type.(type) {
-								case *ast.Ident:
-									IdentPayload(&pl, allStructs, t)
-									pls = append(pls, pl)
-								case *ast.ArrayType:
-									pl.IsSlice = true
-									pls = append(pls, pl)
-								case *ast.MapType:
-									pl.IsMap = true
-									pls = append(pls, pl)
-								case *ast.StarExpr:
-									// Для указателей
-									switch starType := t.X.(type) {
-									case *ast.Ident:
-										IdentPayload(&pl, allStructs, starType)
-										pl.IsStar = true
-										pls = append(pls, pl)
-									}
-								}
-							}
-
-							// myStruct.Fields.
+							pls := MakePayloads(myStruct, allStructs)
 							structItem.Fields = pls
 							genData = append(genData, structItem)
 						}
@@ -343,4 +307,45 @@ func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
 	}
 
 	pl.TypeName = t.Name
+}
+
+func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payload {
+	// Поля структуры для генерации
+	var pls []Payload
+
+	// Перебираем поля структуры
+	for _, field := range myStruct.Fields.List {
+		// Для кажого поля своя поезная нагрузка
+		var pl Payload
+		// устанавливаем имя поля
+		// Пока у нас ограничение на структуру с синтаксисом
+		// каждого поле на новой строке, без запятой
+		pl.VarName = field.Names[0].String()
+		// fmt.Println(field.Type)
+
+		fmt.Printf("%T\n", field.Type)
+
+		// log.Println(field.Type)
+		switch t := field.Type.(type) {
+		case *ast.Ident:
+			IdentPayload(&pl, allStructs, t)
+			pls = append(pls, pl)
+		case *ast.ArrayType:
+			pl.IsSlice = true
+			pls = append(pls, pl)
+		case *ast.MapType:
+			pl.IsMap = true
+			pls = append(pls, pl)
+		case *ast.StarExpr:
+			// Для указателей
+			switch starType := t.X.(type) {
+			case *ast.Ident:
+				IdentPayload(&pl, allStructs, starType)
+				pl.IsStar = true
+				pls = append(pls, pl)
+			}
+		}
+	}
+
+	return pls
 }
