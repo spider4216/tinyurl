@@ -12,4 +12,6 @@ type InsertData struct {
 	StarBoolVar *bool
 	Sll         []int
 	m           map[string]string
+	child       UrlItem
+	MyStrrruct  UrlItem
 }

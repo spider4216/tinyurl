@@ -78,12 +78,42 @@ func (v *{{.Name}}) Reset() {
 
 		{{end}}
 
+		{{if .IsStruct}}
+
+			if resetter, ok := v.{{.VarName}}.(interface{ Reset() }); ok && rs.{{.VarName}} != nil {
+        		resetter.Reset()
+    		}	
+
+		{{end}}
+
 	{{end}}
 
 {{end}}
 
 }
 `
+
+var primitives = map[string]bool{
+	"string":     true,
+	"bool":       true,
+	"int":        true,
+	"int8":       true,
+	"int16":      true,
+	"int32":      true,
+	"int64":      true,
+	"uint":       true,
+	"uint8":      true,
+	"uint16":     true,
+	"uint32":     true,
+	"uint64":     true,
+	"uintptr":    true,
+	"float32":    true,
+	"float64":    true,
+	"complex64":  true,
+	"complex128": true,
+	"byte":       true,
+	"rune":       true,
+}
 
 type St struct {
 	Name   string
@@ -97,7 +127,7 @@ type Payload struct {
 	IsStar      bool
 	IsSlice     bool
 	IsMap       bool
-	HasReset    bool
+	IsStruct    bool
 }
 
 func main() {
@@ -115,6 +145,53 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	allStructs := make(map[string]bool)
+
+	// Обхожу все структуры, чтобы собрать мета данные
+	// т.е. собираю все структуры
+	for _, pkg := range pkgs {
+		// Перебираем все файлы пакета
+		for _, file := range pkg.Syntax {
+			pkg.Fset.File(file.Pos())
+			// fmt.Println(f.Name())
+
+			ast.Inspect(file, func(n ast.Node) bool {
+				// Получаем только декларации
+				decl, ok := n.(*ast.GenDecl)
+
+				if !ok {
+					return true
+				}
+
+				// Фильтруем на type декларацию
+				if decl.Tok.String() != "type" {
+					return true
+				}
+
+				// Перебираем все объявленные типы
+				for _, dec := range decl.Specs {
+					// Получаем тип спецификации
+					tps, ok := dec.(*ast.TypeSpec)
+
+					if !ok {
+						continue
+					}
+
+					// Если тип структура - это то что мне нужно
+					_, ok = tps.Type.(*ast.StructType)
+
+					if !ok {
+						continue
+					}
+
+					allStructs[tps.Name.Name] = true
+				}
+
+				return true
+			})
+		}
 	}
 
 	// Перебираем все пакеты проекта
@@ -189,12 +266,24 @@ func main() {
 								// Пока у нас ограничение на структуру с синтаксисом
 								// каждого поле на новой строке, без запятой
 								pl.VarName = field.Names[0].String()
-								fmt.Println(field.Type)
+								// fmt.Println(field.Type)
+
+								fmt.Printf("%T\n", field.Type)
 
 								// log.Println(field.Type)
 								switch t := field.Type.(type) {
-								case *ast.Ident: // Для примитивов
-									pl.IsPremitive = true
+								case *ast.Ident:
+
+									// Если это примитив
+									if _, ok := primitives[t.Name]; ok {
+										pl.IsPremitive = true
+									}
+
+									// Если это структура
+									if _, ok := allStructs[t.Name]; ok {
+										pl.IsStruct = true
+									}
+
 									pl.TypeName = t.Name
 
 									pls = append(pls, pl)
