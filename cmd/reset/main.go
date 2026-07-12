@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"log"
 
@@ -13,14 +14,13 @@ type St struct {
 }
 
 type Payload struct {
-	VarName  string
-	IsStar   bool
-	IsSlice  bool
-	IsMap    bool
-	IsString bool
-	IsInt    bool
-	IsBool   bool
-	HasReset bool
+	VarName     string
+	IsPremitive bool
+	TypeName    string
+	IsStar      bool
+	IsSlice     bool
+	IsMap       bool
+	HasReset    bool
 }
 
 func main() {
@@ -112,19 +112,26 @@ func main() {
 								// Пока у нас ограничение на структуру с синтаксисом
 								// каждого поле на новой строке, без запятой
 								pl.VarName = field.Names[0].String()
+								fmt.Println(field.Type)
 
 								// log.Println(field.Type)
 								switch t := field.Type.(type) {
 								case *ast.Ident: // Для примитивов
-									switch t.Name {
-									case "string":
-										pl.IsString = true
-									case "bool":
-										pl.IsBool = true
+									pl.IsPremitive = true
+									pl.TypeName = t.Name
+
+									pls = append(pls, pl)
+								case *ast.StarExpr:
+									// Для указателей
+									switch starType := t.X.(type) {
+									case *ast.Ident: // Для примитивов с указателями
+										pl.IsPremitive = true
+										pl.TypeName = starType.Name
+										pl.IsStar = true
+
+										pls = append(pls, pl)
 									}
 								}
-
-								pls = append(pls, pl)
 							}
 
 							// myStruct.Fields.
