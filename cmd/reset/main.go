@@ -62,6 +62,15 @@ func (v *{{.Name}}) Reset() {
 		
 		}
 
+	{{end}}
+
+	{{if not .IsPremitive}}
+
+		{{if .IsSlice}}
+
+			v.{{.VarName}} = v.{{.VarName}}[:0]
+
+		{{end}}
 
 	{{end}}
 
@@ -182,6 +191,9 @@ func main() {
 									pl.IsPremitive = true
 									pl.TypeName = t.Name
 
+									pls = append(pls, pl)
+								case *ast.ArrayType:
+									pl.IsSlice = true
 									pls = append(pls, pl)
 								case *ast.StarExpr:
 									// Для указателей
