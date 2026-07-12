@@ -7,7 +7,26 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+type St struct {
+	Name   string
+	Fields []Payload
+}
+
+type Payload struct {
+	VarName  string
+	IsStar   bool
+	IsSlice  bool
+	IsMap    bool
+	IsString bool
+	IsInt    bool
+	IsBool   bool
+	HasReset bool
+}
+
 func main() {
+	// Здесь будет слайс с данными для генерации
+	var genData []St
+
 	// Конфигурация для инструмента загрузки всех пакетов
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax,
@@ -51,7 +70,7 @@ func main() {
 					}
 
 					// Если тип структура - это то что мне нужно
-					_, ok = tps.Type.(*ast.StructType)
+					myStruct, ok := tps.Type.(*ast.StructType)
 
 					if !ok {
 						continue
@@ -62,6 +81,8 @@ func main() {
 						continue
 					}
 
+					// ast.Print(pkg.Fset, file)
+
 					// Перебираю комментарии структуры
 					for _, comment := range decl.Doc.List {
 						// Если в комментарии есть строка генерации это то что мне нужно
@@ -69,6 +90,46 @@ func main() {
 							log.Println(pkg.Name)
 							log.Println(f.Name())
 							log.Println(comment.Text)
+
+							// Создаем структуру для генерации
+							var structItem St
+							// Задаем ей имя
+							structItem.Name = tps.Name.String()
+
+							// Если у структуры нету полей, ничего не делаем
+							if myStruct.Fields == nil {
+								continue
+							}
+
+							// Поля структуры для генерации
+							var pls []Payload
+
+							// Перебираем поля структуры
+							for _, field := range myStruct.Fields.List {
+								// Для кажого поля своя поезная нагрузка
+								var pl Payload
+								// устанавливаем имя поля
+								// Пока у нас ограничение на структуру с синтаксисом
+								// каждого поле на новой строке, без запятой
+								pl.VarName = field.Names[0].String()
+
+								// log.Println(field.Type)
+								switch t := field.Type.(type) {
+								case *ast.Ident: // Для примитивов
+									switch t.Name {
+									case "string":
+										pl.IsString = true
+									case "bool":
+										pl.IsBool = true
+									}
+								}
+
+								pls = append(pls, pl)
+							}
+
+							// myStruct.Fields.
+							structItem.Fields = pls
+							genData = append(genData, structItem)
 						}
 					}
 				}
@@ -79,5 +140,7 @@ func main() {
 		}
 
 	}
+
+	log.Println(genData)
 
 }
