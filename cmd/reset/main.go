@@ -72,6 +72,12 @@ func (v *{{.Name}}) Reset() {
 
 		{{end}}
 
+		{{if .IsMap}}
+
+			reset(v.{{.VarName}})	
+
+		{{end}}
+
 	{{end}}
 
 {{end}}
@@ -194,6 +200,9 @@ func main() {
 									pls = append(pls, pl)
 								case *ast.ArrayType:
 									pl.IsSlice = true
+									pls = append(pls, pl)
+								case *ast.MapType:
+									pl.IsMap = true
 									pls = append(pls, pl)
 								case *ast.StarExpr:
 									// Для указателей

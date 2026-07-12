@@ -11,4 +11,5 @@ type InsertData struct {
 	BoolVal     bool
 	StarBoolVar *bool
 	Sll         []int
+	m           map[string]string
 }
