@@ -296,8 +296,17 @@ func main() {
 								case *ast.StarExpr:
 									// Для указателей
 									switch starType := t.X.(type) {
-									case *ast.Ident: // Для примитивов с указателями
-										pl.IsPremitive = true
+									case *ast.Ident:
+										// Если это примитив
+										if _, ok := primitives[starType.Name]; ok {
+											pl.IsPremitive = true
+										}
+
+										// Если это структура
+										if _, ok := allStructs[starType.Name]; ok {
+											pl.IsStruct = true
+										}
+
 										pl.TypeName = starType.Name
 										pl.IsStar = true
 
