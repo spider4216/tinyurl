@@ -74,13 +74,13 @@ func (v *{{.Name}}) Reset() {
 
 		{{if .IsMap}}
 
-			reset(v.{{.VarName}})	
+			clear(v.{{.VarName}})
 
 		{{end}}
 
 		{{if .IsStruct}}
 
-			if resetter, ok := v.{{.VarName}}.(interface{ Reset() }); ok && rs.{{.VarName}} != nil {
+			if resetter, ok := v.{{.VarName}}.(interface{ Reset() }); ok && v.{{.VarName}} != nil {
         		resetter.Reset()
     		}	
 
