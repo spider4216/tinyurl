@@ -198,9 +198,6 @@ func main() {
 	for _, pkg := range pkgs {
 		// Перебираем все файлы пакета
 		for _, file := range pkg.Syntax {
-			f := pkg.Fset.File(file.Pos())
-			// fmt.Println(f.Name())
-
 			ast.Inspect(file, func(n ast.Node) bool {
 				// Получаем только декларации
 				decl, ok := n.(*ast.GenDecl)
@@ -235,30 +232,17 @@ func main() {
 						continue
 					}
 
-					// ast.Print(pkg.Fset, file)
-
 					// Перебираю комментарии структуры
 					for _, comment := range decl.Doc.List {
 						// Если в комментарии есть строка генерации это то что мне нужно
 						if comment.Text == "// generate:reset" {
-							log.Println(pkg.Name)
-							log.Println(f.Name())
-							log.Println(comment.Text)
+							structItem, err := MakeStruct(myStruct, tps, allStructs)
 
-							// Создаем структуру для генерации
-							var structItem St
-							// Задаем ей имя
-							structItem.Name = tps.Name.String()
-
-							// Если у структуры нету полей, ничего не делаем
-							if myStruct.Fields == nil {
+							if err != nil {
 								continue
 							}
 
-							// Поля структуры для генерации
-							pls := MakePayloads(myStruct, allStructs)
-							structItem.Fields = pls
-							genData = append(genData, structItem)
+							genData = append(genData, *structItem)
 						}
 					}
 				}
@@ -294,6 +278,24 @@ func main() {
 
 }
 
+func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) (*St, error) {
+	// Создаем структуру для генерации
+	var structItem St
+	// Задаем ей имя
+	structItem.Name = tps.Name.String()
+
+	// Если у структуры нету полей, ничего не делаем
+	if myStruct.Fields == nil {
+		return nil, fmt.Errorf("no fields")
+	}
+
+	// Поля структуры для генерации
+	pls := MakePayloads(myStruct, allStructs)
+	structItem.Fields = pls
+
+	return &structItem, nil
+}
+
 // Определяет является ли Ident примитивом или структурой
 func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
 	// Если это примитив
@@ -309,6 +311,7 @@ func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
 	pl.TypeName = t.Name
 }
 
+// Установка полезной нагрузки по всем филдам одной структуры
 func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payload {
 	// Поля структуры для генерации
 	var pls []Payload
