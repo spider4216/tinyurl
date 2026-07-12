@@ -1,12 +1,74 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"log"
+	"text/template"
 
 	"golang.org/x/tools/go/packages"
 )
+
+const tpl = `
+func (v *{{.Name}}) Reset() {
+
+{{range .Fields}}
+
+	{{if and .IsPremitive (not .IsStar)}}
+
+		{{if eq .TypeName "string"}}
+
+			v.{{.VarName}} = ""
+
+		{{end}}
+
+		{{if eq .TypeName "int"}}
+
+			v.{{.VarName}} = 0
+
+		{{end}}
+
+		{{if eq .TypeName "bool"}}
+
+			v.{{.VarName}} = false
+
+		{{end}}
+
+	{{end}}
+
+	{{if and .IsPremitive .IsStar}}
+
+		if v.{{.VarName}} != nil {
+
+			{{if eq .TypeName "string"}}
+
+				*v.{{.VarName}} = ""
+
+			{{end}}
+
+			{{if eq .TypeName "int"}}
+
+				*v.{{.VarName}} = 0
+
+			{{end}}
+
+			{{if eq .TypeName "bool"}}
+
+				*v.{{.VarName}} = false
+
+			{{end}}
+		
+		}
+
+
+	{{end}}
+
+{{end}}
+
+}
+`
 
 type St struct {
 	Name   string
@@ -149,5 +211,25 @@ func main() {
 	}
 
 	log.Println(genData)
+
+	t := template.Must(template.New("gen").Parse(tpl))
+
+	// Перебираем структуры для генерации
+	for _, data := range genData {
+
+		var buf bytes.Buffer
+		err = t.Execute(&buf, data)
+
+		if err != nil {
+			panic(err)
+		}
+
+		bufFmt, err := format.Source(buf.Bytes())
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(string(bufFmt))
+	}
 
 }
