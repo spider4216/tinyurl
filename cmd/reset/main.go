@@ -273,19 +273,7 @@ func main() {
 								// log.Println(field.Type)
 								switch t := field.Type.(type) {
 								case *ast.Ident:
-
-									// Если это примитив
-									if _, ok := primitives[t.Name]; ok {
-										pl.IsPremitive = true
-									}
-
-									// Если это структура
-									if _, ok := allStructs[t.Name]; ok {
-										pl.IsStruct = true
-									}
-
-									pl.TypeName = t.Name
-
+									IdentPayload(&pl, allStructs, t)
 									pls = append(pls, pl)
 								case *ast.ArrayType:
 									pl.IsSlice = true
@@ -297,19 +285,8 @@ func main() {
 									// Для указателей
 									switch starType := t.X.(type) {
 									case *ast.Ident:
-										// Если это примитив
-										if _, ok := primitives[starType.Name]; ok {
-											pl.IsPremitive = true
-										}
-
-										// Если это структура
-										if _, ok := allStructs[starType.Name]; ok {
-											pl.IsStruct = true
-										}
-
-										pl.TypeName = starType.Name
+										IdentPayload(&pl, allStructs, starType)
 										pl.IsStar = true
-
 										pls = append(pls, pl)
 									}
 								}
@@ -351,4 +328,19 @@ func main() {
 		fmt.Println(string(bufFmt))
 	}
 
+}
+
+// Определяет является ли Ident примитивом или структурой
+func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
+	// Если это примитив
+	if _, ok := primitives[t.Name]; ok {
+		pl.IsPremitive = true
+	}
+
+	// Если это структура
+	if _, ok := allStructs[t.Name]; ok {
+		pl.IsStruct = true
+	}
+
+	pl.TypeName = t.Name
 }
