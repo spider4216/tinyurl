@@ -99,6 +99,7 @@ func (afo *AuditFileObserver) Update(data Body) error {
 	return nil
 }
 
+// generate:reset
 type AuditServerObserver struct {
 	ID     string
 	URL    string

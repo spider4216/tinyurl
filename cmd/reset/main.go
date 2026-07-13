@@ -6,93 +6,105 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
-	"log"
-	"strings"
+	"os"
+	"path/filepath"
 	"text/template"
 
 	"golang.org/x/tools/go/packages"
 )
 
 const tpl = `
-func (v *{{.Name}}) Reset() {
 
-{{range .Fields}}
+package {{.Name}}
 
-	{{if and .IsPremitive (not .IsStar)}}
+{{range .Structs}}
 
-		{{if eq .TypeName "string"}}
+	func (v *{{.Name}}) Reset() {
 
-			v.{{.VarName}} = ""
+		{{range .Fields}}
 
-		{{end}}
+			{{if and .IsPremitive (not .IsStar)}}
 
-		{{if eq .TypeName "int"}}
+				{{if eq .TypeName "string"}}
 
-			v.{{.VarName}} = 0
+					v.{{.VarName}} = ""
 
-		{{end}}
+				{{end}}
 
-		{{if eq .TypeName "bool"}}
+				{{if eq .TypeName "int"}}
 
-			v.{{.VarName}} = false
+					v.{{.VarName}} = 0
 
-		{{end}}
+				{{end}}
 
-	{{end}}
+				{{if eq .TypeName "bool"}}
 
-	{{if and .IsPremitive .IsStar}}
+					v.{{.VarName}} = false
 
-		if v.{{.VarName}} != nil {
-
-			{{if eq .TypeName "string"}}
-
-				*v.{{.VarName}} = ""
+				{{end}}
 
 			{{end}}
 
-			{{if eq .TypeName "int"}}
+			{{if and .IsPremitive .IsStar}}
 
-				*v.{{.VarName}} = 0
+				if v.{{.VarName}} != nil {
+
+					{{if eq .TypeName "string"}}
+
+						*v.{{.VarName}} = ""
+
+					{{end}}
+
+					{{if eq .TypeName "int"}}
+
+						*v.{{.VarName}} = 0
+
+					{{end}}
+
+					{{if eq .TypeName "bool"}}
+
+						*v.{{.VarName}} = false
+
+					{{end}}
+
+				}
 
 			{{end}}
 
-			{{if eq .TypeName "bool"}}
+			{{if not .IsPremitive}}
 
-				*v.{{.VarName}} = false
+				{{if .IsSlice}}
+
+					v.{{.VarName}} = v.{{.VarName}}[:0]
+
+				{{end}}
+
+				{{if .IsMap}}
+
+					clear(v.{{.VarName}})
+
+				{{end}}
+
+				{{if and .IsStruct (not .IsStar)}}
+
+					v.{{.VarName}}.Reset()
+
+				{{end}}
+
+				{{if and .IsStruct .IsStar}}
+
+					if v.{{.VarName}} != nil {
+						v.{{.VarName}}.Reset()
+					}
+
+				{{end}}
 
 			{{end}}
-		
-		}
-
-	{{end}}
-
-	{{if not .IsPremitive}}
-
-		{{if .IsSlice}}
-
-			v.{{.VarName}} = v.{{.VarName}}[:0]
 
 		{{end}}
-
-		{{if .IsMap}}
-
-			clear(v.{{.VarName}})
-
-		{{end}}
-
-		{{if .IsStruct}}
-
-			if resetter, ok := v.{{.VarName}}.(interface{ Reset() }); ok && v.{{.VarName}} != nil {
-        		resetter.Reset()
-    		}	
-
-		{{end}}
-
-	{{end}}
+	}
 
 {{end}}
-
-}
 `
 
 const (
@@ -122,10 +134,15 @@ var primitives = map[string]bool{
 	"rune":       true,
 }
 
+type PkgData struct {
+	Path    string
+	Name    string
+	Structs []St
+}
+
 type St struct {
 	Name   string
 	Fields []Payload
-	Path   string
 }
 
 type Payload struct {
@@ -158,16 +175,14 @@ func main() {
 	// Формируем данные для шаблона
 	genData := MakeTplData(pkgs, allStructs)
 
-	log.Println(genData)
-
 	// Формирование шаблона
 	t := template.Must(template.New(tplName).Parse(tpl))
 
-	// Перебираем структуры для генерации
-	for _, data := range genData {
-		var buf bytes.Buffer
-		err = t.Execute(&buf, data)
+	for _, pkg := range genData {
 
+		var buf bytes.Buffer
+
+		err := t.Execute(&buf, pkg)
 		if err != nil {
 			panic(err)
 		}
@@ -177,109 +192,114 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Println(string(bufFmt))
+		err = os.WriteFile(
+			filepath.Join(pkg.Path, "reset.gen.go"),
+			bufFmt,
+			0644,
+		)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 }
 
-func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []St {
-	// Здесь будет слайс с данными для генерации
-	var genData []St
+func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []PkgData {
+	var result []PkgData
 
-	// Перебираем все пакеты проекта
 	for _, pkg := range pkgs {
-		// Перебираем все файлы пакета
-		for _, file := range pkg.Syntax {
-			log.Println(pkg.Fset.File(file.Pos()).Name())
-			ast.Inspect(file, func(n ast.Node) bool {
-				// Получаем только декларации
-				decl, ok := n.(*ast.GenDecl)
+		pkgData := PkgData{
+			Name: pkg.Name,
+		}
 
+		for _, file := range pkg.Syntax {
+			pkgData.Path = filepath.Dir(pkg.Fset.File(file.Pos()).Name())
+
+			ast.Inspect(file, func(n ast.Node) bool {
+				decl, ok := n.(*ast.GenDecl)
 				if !ok {
 					return true
 				}
 
-				// Фильтруем на type декларацию
-				if decl.Tok.String() != "type" {
+				if decl.Tok != token.TYPE {
 					return true
 				}
 
-				// Перебираем все объявленные типы
 				for _, dec := range decl.Specs {
-					// Получаем тип спецификации
 					tps, ok := dec.(*ast.TypeSpec)
-
 					if !ok {
 						continue
 					}
 
-					// Если тип структура - это то что мне нужно
 					myStruct, ok := tps.Type.(*ast.StructType)
-
 					if !ok {
 						continue
 					}
 
-					// Если комментария нет, переходим к следующей структуре
 					if decl.Doc == nil {
 						continue
 					}
 
-					genData = MakeData(genData, decl, myStruct, tps, allStructs, pkg.Fset.File(file.Pos()))
+					st := MakeData(decl, myStruct, tps, allStructs)
+					if st != nil {
+						pkgData.Structs = append(pkgData.Structs, *st)
+					}
 				}
 
 				return true
 			})
+		}
 
+		if len(pkgData.Structs) > 0 {
+			result = append(result, pkgData)
 		}
 	}
 
-	return genData
+	return result
 }
 
 // Формирование данных для генерации
-func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool, file *token.File) []St {
-	// Перебираю комментарии структуры
-	for _, comment := range decl.Doc.List {
-		// Если в комментарии есть строка генерации это то что мне нужно
-		if comment.Text == "// generate:reset" {
-			structItem, err := MakeStruct(myStruct, tps, allStructs, file)
+func MakeData(
+	decl *ast.GenDecl,
+	myStruct *ast.StructType,
+	tps *ast.TypeSpec,
+	allStructs map[string]bool,
+) *St {
 
+	for _, comment := range decl.Doc.List {
+		if comment.Text == "// generate:reset" {
+
+			st, err := MakeStruct(myStruct, tps, allStructs)
 			if err != nil {
-				continue
+				return nil
 			}
 
-			st = append(st, *structItem)
+			return st
 		}
 	}
 
-	return st
+	return nil
 }
 
 // Формирование структуры с полями для рендера
-func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool, file *token.File) (*St, error) {
-	// Создаем структуру для генерации
-	var structItem St
-	// Задаем ей имя
-	structItem.Name = tps.Name.String()
+func MakeStruct(
+	myStruct *ast.StructType,
+	tps *ast.TypeSpec,
+	allStructs map[string]bool,
+) (*St, error) {
 
-	// Если у структуры нету полей, ничего не делаем
+	var st St
+
+	st.Name = tps.Name.Name
+
 	if myStruct.Fields == nil {
 		return nil, fmt.Errorf("no fields")
 	}
 
-	// Поля структуры для генерации
-	pls := MakePayloads(myStruct, allStructs)
-	structItem.Fields = pls
+	st.Fields = MakePayloads(myStruct, allStructs)
 
-	// Готовим путь, убирая имя файла
-	parts := strings.Split(file.Name(), "/")
-	parts = parts[0 : len(parts)-1]
-	path := strings.Join(parts, "/")
-
-	structItem.Path = path
-
-	return &structItem, nil
+	return &st, nil
 }
 
 // Определяет является ли Ident примитивом или структурой
@@ -310,11 +330,7 @@ func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payloa
 		// Пока у нас ограничение на структуру с синтаксисом
 		// каждого поле на новой строке, без запятой
 		pl.VarName = field.Names[0].String()
-		// fmt.Println(field.Type)
 
-		fmt.Printf("%T\n", field.Type)
-
-		// log.Println(field.Type)
 		switch t := field.Type.(type) {
 		case *ast.Ident:
 			IdentPayload(&pl, allStructs, t)
