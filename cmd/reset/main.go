@@ -175,6 +175,13 @@ func main() {
 	// Формируем данные для шаблона
 	genData := MakeTplData(pkgs, allStructs)
 
+	if err := SaveFiles(genData); err != nil {
+		panic(err)
+	}
+
+}
+
+func SaveFiles(genData []PkgData) error {
 	// Формирование шаблона
 	t := template.Must(template.New(tplName).Parse(tpl))
 
@@ -184,12 +191,12 @@ func main() {
 
 		err := t.Execute(&buf, pkg)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		bufFmt, err := format.Source(buf.Bytes())
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		err = os.WriteFile(
@@ -199,10 +206,11 @@ func main() {
 		)
 
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
+	return nil
 }
 
 func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []PkgData {
