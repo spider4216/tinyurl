@@ -131,8 +131,6 @@ type Payload struct {
 }
 
 func main() {
-	// Здесь будет слайс с данными для генерации
-	var genData []St
 
 	// Конфигурация для инструмента загрузки всех пакетов
 	cfg := &packages.Config{
@@ -149,6 +147,37 @@ func main() {
 
 	// Собираем мета данные
 	allStructs := MakeMetaStructs(pkgs)
+
+	// Формируем данные для шаблона
+	genData := MakeTplData(pkgs, allStructs)
+
+	log.Println(genData)
+
+	t := template.Must(template.New("gen").Parse(tpl))
+
+	// Перебираем структуры для генерации
+	for _, data := range genData {
+
+		var buf bytes.Buffer
+		err = t.Execute(&buf, data)
+
+		if err != nil {
+			panic(err)
+		}
+
+		bufFmt, err := format.Source(buf.Bytes())
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(string(bufFmt))
+	}
+
+}
+
+func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []St {
+	// Здесь будет слайс с данными для генерации
+	var genData []St
 
 	// Перебираем все пакеты проекта
 	for _, pkg := range pkgs {
@@ -197,28 +226,7 @@ func main() {
 		}
 	}
 
-	log.Println(genData)
-
-	t := template.Must(template.New("gen").Parse(tpl))
-
-	// Перебираем структуры для генерации
-	for _, data := range genData {
-
-		var buf bytes.Buffer
-		err = t.Execute(&buf, data)
-
-		if err != nil {
-			panic(err)
-		}
-
-		bufFmt, err := format.Source(buf.Bytes())
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println(string(bufFmt))
-	}
-
+	return genData
 }
 
 // Формирование данных для генерации
