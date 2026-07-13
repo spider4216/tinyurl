@@ -232,12 +232,12 @@ func makeTplData(pkgs []*packages.Package, allStructs map[string]bool) []pkgData
 	var result []pkgData
 
 	for _, pkg := range pkgs {
-		pkgData := pkgData{
+		pkgmData := pkgData{
 			Name: pkg.Name,
 		}
 
 		for _, file := range pkg.Syntax {
-			pkgData.Path = filepath.Dir(pkg.Fset.File(file.Pos()).Name())
+			pkgmData.Path = filepath.Dir(pkg.Fset.File(file.Pos()).Name())
 
 			ast.Inspect(file, func(n ast.Node) bool {
 				decl, ok := n.(*ast.GenDecl)
@@ -266,7 +266,7 @@ func makeTplData(pkgs []*packages.Package, allStructs map[string]bool) []pkgData
 
 					st := makeData(decl, myStruct, tps, allStructs)
 					if st != nil {
-						pkgData.Structs = append(pkgData.Structs, *st)
+						pkgmData.Structs = append(pkgmData.Structs, *st)
 					}
 				}
 
@@ -274,8 +274,8 @@ func makeTplData(pkgs []*packages.Package, allStructs map[string]bool) []pkgData
 			})
 		}
 
-		if len(pkgData.Structs) > 0 {
-			result = append(result, pkgData)
+		if len(pkgmData.Structs) > 0 {
+			result = append(result, pkgmData)
 		}
 	}
 
@@ -309,17 +309,17 @@ func makeStruct(
 	tps *ast.TypeSpec,
 	allStructs map[string]bool,
 ) (*st, error) {
-	var st st
+	var stm st
 
-	st.Name = tps.Name.Name
+	stm.Name = tps.Name.Name
 
 	if myStruct.Fields == nil {
 		return nil, fmt.Errorf("no fields")
 	}
 
-	st.Fields = makePayloads(myStruct, allStructs)
+	stm.Fields = makePayloads(myStruct, allStructs)
 
-	return &st, nil
+	return &stm, nil
 }
 
 // Определяет является ли Ident примитивом или структурой
