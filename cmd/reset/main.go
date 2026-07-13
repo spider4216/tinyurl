@@ -232,19 +232,7 @@ func main() {
 						continue
 					}
 
-					// Перебираю комментарии структуры
-					for _, comment := range decl.Doc.List {
-						// Если в комментарии есть строка генерации это то что мне нужно
-						if comment.Text == "// generate:reset" {
-							structItem, err := MakeStruct(myStruct, tps, allStructs)
-
-							if err != nil {
-								continue
-							}
-
-							genData = append(genData, *structItem)
-						}
-					}
+					genData = MakeData(genData, decl, myStruct, tps, allStructs)
 				}
 
 				return true
@@ -276,6 +264,25 @@ func main() {
 		fmt.Println(string(bufFmt))
 	}
 
+}
+
+// Формирование данных для генерации
+func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) []St {
+	// Перебираю комментарии структуры
+	for _, comment := range decl.Doc.List {
+		// Если в комментарии есть строка генерации это то что мне нужно
+		if comment.Text == "// generate:reset" {
+			structItem, err := MakeStruct(myStruct, tps, allStructs)
+
+			if err != nil {
+				continue
+			}
+
+			st = append(st, *structItem)
+		}
+	}
+
+	return st
 }
 
 func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) (*St, error) {
