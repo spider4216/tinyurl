@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"go/token"
 	"log"
+	"strings"
 	"text/template"
 
 	"golang.org/x/tools/go/packages"
@@ -93,6 +95,11 @@ func (v *{{.Name}}) Reset() {
 }
 `
 
+const (
+	tplName  string = "gen"
+	loadPath string = "./..."
+)
+
 var primitives = map[string]bool{
 	"string":     true,
 	"bool":       true,
@@ -118,6 +125,7 @@ var primitives = map[string]bool{
 type St struct {
 	Name   string
 	Fields []Payload
+	Path   string
 }
 
 type Payload struct {
@@ -131,7 +139,6 @@ type Payload struct {
 }
 
 func main() {
-
 	// Конфигурация для инструмента загрузки всех пакетов
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax,
@@ -139,7 +146,7 @@ func main() {
 	}
 
 	// Сканирую все пакеты проекта в internal
-	pkgs, err := packages.Load(cfg, "./...")
+	pkgs, err := packages.Load(cfg, loadPath)
 
 	if err != nil {
 		panic(err)
@@ -153,11 +160,11 @@ func main() {
 
 	log.Println(genData)
 
-	t := template.Must(template.New("gen").Parse(tpl))
+	// Формирование шаблона
+	t := template.Must(template.New(tplName).Parse(tpl))
 
 	// Перебираем структуры для генерации
 	for _, data := range genData {
-
 		var buf bytes.Buffer
 		err = t.Execute(&buf, data)
 
@@ -183,6 +190,7 @@ func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []St {
 	for _, pkg := range pkgs {
 		// Перебираем все файлы пакета
 		for _, file := range pkg.Syntax {
+			log.Println(pkg.Fset.File(file.Pos()).Name())
 			ast.Inspect(file, func(n ast.Node) bool {
 				// Получаем только декларации
 				decl, ok := n.(*ast.GenDecl)
@@ -217,7 +225,7 @@ func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []St {
 						continue
 					}
 
-					genData = MakeData(genData, decl, myStruct, tps, allStructs)
+					genData = MakeData(genData, decl, myStruct, tps, allStructs, pkg.Fset.File(file.Pos()))
 				}
 
 				return true
@@ -230,12 +238,12 @@ func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []St {
 }
 
 // Формирование данных для генерации
-func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) []St {
+func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool, file *token.File) []St {
 	// Перебираю комментарии структуры
 	for _, comment := range decl.Doc.List {
 		// Если в комментарии есть строка генерации это то что мне нужно
 		if comment.Text == "// generate:reset" {
-			structItem, err := MakeStruct(myStruct, tps, allStructs)
+			structItem, err := MakeStruct(myStruct, tps, allStructs, file)
 
 			if err != nil {
 				continue
@@ -249,7 +257,7 @@ func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.Typ
 }
 
 // Формирование структуры с полями для рендера
-func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) (*St, error) {
+func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool, file *token.File) (*St, error) {
 	// Создаем структуру для генерации
 	var structItem St
 	// Задаем ей имя
@@ -263,6 +271,13 @@ func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[stri
 	// Поля структуры для генерации
 	pls := MakePayloads(myStruct, allStructs)
 	structItem.Fields = pls
+
+	// Готовим путь, убирая имя файла
+	parts := strings.Split(file.Name(), "/")
+	parts = parts[0 : len(parts)-1]
+	path := strings.Join(parts, "/")
+
+	structItem.Path = path
 
 	return &structItem, nil
 }
