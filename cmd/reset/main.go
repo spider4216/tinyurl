@@ -147,52 +147,8 @@ func main() {
 		panic(err)
 	}
 
-	allStructs := make(map[string]bool)
-
-	// Обхожу все структуры, чтобы собрать мета данные
-	// т.е. собираю все структуры
-	for _, pkg := range pkgs {
-		// Перебираем все файлы пакета
-		for _, file := range pkg.Syntax {
-			pkg.Fset.File(file.Pos())
-			// fmt.Println(f.Name())
-
-			ast.Inspect(file, func(n ast.Node) bool {
-				// Получаем только декларации
-				decl, ok := n.(*ast.GenDecl)
-
-				if !ok {
-					return true
-				}
-
-				// Фильтруем на type декларацию
-				if decl.Tok.String() != "type" {
-					return true
-				}
-
-				// Перебираем все объявленные типы
-				for _, dec := range decl.Specs {
-					// Получаем тип спецификации
-					tps, ok := dec.(*ast.TypeSpec)
-
-					if !ok {
-						continue
-					}
-
-					// Если тип структура - это то что мне нужно
-					_, ok = tps.Type.(*ast.StructType)
-
-					if !ok {
-						continue
-					}
-
-					allStructs[tps.Name.Name] = true
-				}
-
-				return true
-			})
-		}
-	}
+	// Собираем мета данные
+	allStructs := MakeMetaStructs(pkgs)
 
 	// Перебираем все пакеты проекта
 	for _, pkg := range pkgs {
@@ -239,7 +195,6 @@ func main() {
 			})
 
 		}
-
 	}
 
 	log.Println(genData)
@@ -285,6 +240,7 @@ func MakeData(st []St, decl *ast.GenDecl, myStruct *ast.StructType, tps *ast.Typ
 	return st
 }
 
+// Формирование структуры с полями для рендера
 func MakeStruct(myStruct *ast.StructType, tps *ast.TypeSpec, allStructs map[string]bool) (*St, error) {
 	// Создаем структуру для генерации
 	var structItem St
@@ -358,4 +314,54 @@ func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payloa
 	}
 
 	return pls
+}
+
+// Сканирует проект, собирает структуры в множество. Это множество понадобится
+// чтобы определить является ли Ident структурой
+func MakeMetaStructs(pkgs []*packages.Package) map[string]bool {
+	meta := make(map[string]bool)
+
+	for _, pkg := range pkgs {
+		// Перебираем все файлы пакета
+		for _, file := range pkg.Syntax {
+			pkg.Fset.File(file.Pos())
+			ast.Inspect(file, func(n ast.Node) bool {
+				// Получаем только декларации
+				decl, ok := n.(*ast.GenDecl)
+
+				if !ok {
+					return true
+				}
+
+				// Фильтруем на type декларацию
+				if decl.Tok.String() != "type" {
+					return true
+				}
+
+				// Перебираем все объявленные типы
+				for _, dec := range decl.Specs {
+					// Получаем тип спецификации
+					tps, ok := dec.(*ast.TypeSpec)
+
+					if !ok {
+						continue
+					}
+
+					// Если тип структура - это то что мне нужно
+					_, ok = tps.Type.(*ast.StructType)
+
+					if !ok {
+						continue
+					}
+
+					// Наполняем мета данные названиями структур
+					meta[tps.Name.Name] = true
+				}
+
+				return true
+			})
+		}
+	}
+
+	return meta
 }
