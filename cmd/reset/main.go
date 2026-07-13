@@ -180,7 +180,6 @@ func main() {
 
 	// Сканирую все пакеты проекта в internal
 	pkgs, err := packages.Load(cfg, loadPath)
-
 	if err != nil {
 		panic(err)
 	}
@@ -194,7 +193,6 @@ func main() {
 	if err := saveFiles(genData); err != nil {
 		panic(err)
 	}
-
 }
 
 // Сохранение в файлы
@@ -219,9 +217,8 @@ func saveFiles(genData []pkgData) error {
 		err = os.WriteFile(
 			filepath.Join(pkg.Path, fileName),
 			bufFmt,
-			0644,
+			0o644,
 		)
-
 		if err != nil {
 			return err
 		}
@@ -293,7 +290,6 @@ func makeData(
 	tps *ast.TypeSpec,
 	allStructs map[string]bool,
 ) *st {
-
 	for _, comment := range decl.Doc.List {
 		if comment.Text == anot {
 
@@ -315,7 +311,6 @@ func makeStruct(
 	tps *ast.TypeSpec,
 	allStructs map[string]bool,
 ) (*st, error) {
-
 	var st st
 
 	st.Name = tps.Name.Name
