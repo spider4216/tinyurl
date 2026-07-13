@@ -201,7 +201,6 @@ func saveFiles(genData []pkgData) error {
 	t := template.Must(template.New(tplName).Parse(tpl))
 
 	for _, pkg := range genData {
-
 		var buf bytes.Buffer
 
 		err := t.Execute(&buf, pkg)
@@ -292,7 +291,6 @@ func makeData(
 ) *st {
 	for _, comment := range decl.Doc.List {
 		if comment.Text == anot {
-
 			st, err := makeStruct(myStruct, tps, allStructs)
 			if err != nil {
 				return nil
