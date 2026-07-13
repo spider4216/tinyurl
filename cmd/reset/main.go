@@ -134,18 +134,18 @@ var primitives = map[string]bool{
 	"rune":       true,
 }
 
-type PkgData struct {
+type pkgData struct {
 	Path    string
 	Name    string
-	Structs []St
+	Structs []st
 }
 
-type St struct {
+type st struct {
 	Name   string
-	Fields []Payload
+	Fields []payload
 }
 
-type Payload struct {
+type payload struct {
 	VarName     string
 	IsPremitive bool
 	TypeName    string
@@ -170,18 +170,19 @@ func main() {
 	}
 
 	// Собираем мета данные
-	allStructs := MakeMetaStructs(pkgs)
+	allStructs := makeMetaStructs(pkgs)
 
 	// Формируем данные для шаблона
-	genData := MakeTplData(pkgs, allStructs)
+	genData := makeTplData(pkgs, allStructs)
 
-	if err := SaveFiles(genData); err != nil {
+	if err := saveFiles(genData); err != nil {
 		panic(err)
 	}
 
 }
 
-func SaveFiles(genData []PkgData) error {
+// Сохранение в файлы
+func saveFiles(genData []pkgData) error {
 	// Формирование шаблона
 	t := template.Must(template.New(tplName).Parse(tpl))
 
@@ -213,11 +214,11 @@ func SaveFiles(genData []PkgData) error {
 	return nil
 }
 
-func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []PkgData {
-	var result []PkgData
+func makeTplData(pkgs []*packages.Package, allStructs map[string]bool) []pkgData {
+	var result []pkgData
 
 	for _, pkg := range pkgs {
-		pkgData := PkgData{
+		pkgData := pkgData{
 			Name: pkg.Name,
 		}
 
@@ -249,7 +250,7 @@ func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []PkgData
 						continue
 					}
 
-					st := MakeData(decl, myStruct, tps, allStructs)
+					st := makeData(decl, myStruct, tps, allStructs)
 					if st != nil {
 						pkgData.Structs = append(pkgData.Structs, *st)
 					}
@@ -268,17 +269,17 @@ func MakeTplData(pkgs []*packages.Package, allStructs map[string]bool) []PkgData
 }
 
 // Формирование данных для генерации
-func MakeData(
+func makeData(
 	decl *ast.GenDecl,
 	myStruct *ast.StructType,
 	tps *ast.TypeSpec,
 	allStructs map[string]bool,
-) *St {
+) *st {
 
 	for _, comment := range decl.Doc.List {
 		if comment.Text == "// generate:reset" {
 
-			st, err := MakeStruct(myStruct, tps, allStructs)
+			st, err := makeStruct(myStruct, tps, allStructs)
 			if err != nil {
 				return nil
 			}
@@ -291,13 +292,13 @@ func MakeData(
 }
 
 // Формирование структуры с полями для рендера
-func MakeStruct(
+func makeStruct(
 	myStruct *ast.StructType,
 	tps *ast.TypeSpec,
 	allStructs map[string]bool,
-) (*St, error) {
+) (*st, error) {
 
-	var st St
+	var st st
 
 	st.Name = tps.Name.Name
 
@@ -305,13 +306,13 @@ func MakeStruct(
 		return nil, fmt.Errorf("no fields")
 	}
 
-	st.Fields = MakePayloads(myStruct, allStructs)
+	st.Fields = makePayloads(myStruct, allStructs)
 
 	return &st, nil
 }
 
 // Определяет является ли Ident примитивом или структурой
-func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
+func identPayload(pl *payload, allStructs map[string]bool, t *ast.Ident) {
 	// Если это примитив
 	if _, ok := primitives[t.Name]; ok {
 		pl.IsPremitive = true
@@ -326,14 +327,14 @@ func IdentPayload(pl *Payload, allStructs map[string]bool, t *ast.Ident) {
 }
 
 // Установка полезной нагрузки по всем филдам одной структуры
-func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payload {
+func makePayloads(myStruct *ast.StructType, allStructs map[string]bool) []payload {
 	// Поля структуры для генерации
-	var pls []Payload
+	var pls []payload
 
 	// Перебираем поля структуры
 	for _, field := range myStruct.Fields.List {
 		// Для кажого поля своя поезная нагрузка
-		var pl Payload
+		var pl payload
 		// устанавливаем имя поля
 		// Пока у нас ограничение на структуру с синтаксисом
 		// каждого поле на новой строке, без запятой
@@ -341,7 +342,7 @@ func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payloa
 
 		switch t := field.Type.(type) {
 		case *ast.Ident:
-			IdentPayload(&pl, allStructs, t)
+			identPayload(&pl, allStructs, t)
 			pls = append(pls, pl)
 		case *ast.ArrayType:
 			pl.IsSlice = true
@@ -353,7 +354,7 @@ func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payloa
 			// Для указателей
 			switch starType := t.X.(type) {
 			case *ast.Ident:
-				IdentPayload(&pl, allStructs, starType)
+				identPayload(&pl, allStructs, starType)
 				pl.IsStar = true
 				pls = append(pls, pl)
 			}
@@ -365,7 +366,7 @@ func MakePayloads(myStruct *ast.StructType, allStructs map[string]bool) []Payloa
 
 // Сканирует проект, собирает структуры в множество. Это множество понадобится
 // чтобы определить является ли Ident структурой
-func MakeMetaStructs(pkgs []*packages.Package) map[string]bool {
+func makeMetaStructs(pkgs []*packages.Package) map[string]bool {
 	meta := make(map[string]bool)
 
 	for _, pkg := range pkgs {
