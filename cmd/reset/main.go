@@ -1,3 +1,8 @@
+// Генератор сброса значений.
+// Есть небольшие ограничения у данного генератора, не все успел обработать:
+// например генератор не поймет определение полей структуры вида "a, b int", нужно обязательно
+// a int, b int.
+// В остальном вроде функционирует
 package main
 
 import (
@@ -108,10 +113,13 @@ package {{.Name}}
 `
 
 const (
+	anot     string = "// generate:reset"
 	tplName  string = "gen"
 	loadPath string = "./..."
+	fileName string = "reset.gen.go"
 )
 
+// primitives Примитивные типы данных
 var primitives = map[string]bool{
 	"string":     true,
 	"bool":       true,
@@ -134,27 +142,35 @@ var primitives = map[string]bool{
 	"rune":       true,
 }
 
+// pkgData данные по пакетам - один пакет - много структур
+// (один ко многим)
+// данная структура будет использоваться шаблоном
 type pkgData struct {
 	Path    string
 	Name    string
 	Structs []st
 }
 
+// st структура, в ней могут быть поля и имя структуры
+// данная структура будет использоваться шаблоном
 type st struct {
 	Name   string
 	Fields []payload
 }
 
+// payload полезная нагрузка, по сути информация по полям
+// данная структура будет использоваться шаблоном
 type payload struct {
-	VarName     string
-	IsPremitive bool
-	TypeName    string
-	IsStar      bool
-	IsSlice     bool
-	IsMap       bool
-	IsStruct    bool
+	VarName     string // Название поля
+	IsPremitive bool   // является ли тип примитивом
+	TypeName    string // название типа
+	IsStar      bool   // является ли тип ссылочным
+	IsSlice     bool   // является ли тип срезом
+	IsMap       bool   // является ли тип мапой
+	IsStruct    bool   // является ли тип структурой
 }
 
+// Точка входа - одновременно фасад
 func main() {
 	// Конфигурация для инструмента загрузки всех пакетов
 	cfg := &packages.Config{
@@ -201,7 +217,7 @@ func saveFiles(genData []pkgData) error {
 		}
 
 		err = os.WriteFile(
-			filepath.Join(pkg.Path, "reset.gen.go"),
+			filepath.Join(pkg.Path, fileName),
 			bufFmt,
 			0644,
 		)
@@ -214,6 +230,8 @@ func saveFiles(genData []pkgData) error {
 	return nil
 }
 
+// Делаю данные для шаблона - на выходе срез с пакетами с содержимым по структурам
+// все данные нужны шаблону
 func makeTplData(pkgs []*packages.Package, allStructs map[string]bool) []pkgData {
 	var result []pkgData
 
@@ -277,7 +295,7 @@ func makeData(
 ) *st {
 
 	for _, comment := range decl.Doc.List {
-		if comment.Text == "// generate:reset" {
+		if comment.Text == anot {
 
 			st, err := makeStruct(myStruct, tps, allStructs)
 			if err != nil {
