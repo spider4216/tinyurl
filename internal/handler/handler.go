@@ -12,6 +12,7 @@ import (
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
+	"github.com/spider4216/tinyurl/internal/pool"
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
@@ -21,18 +22,20 @@ type Handler struct {
 	service      service.Service
 	logger       *zap.SugaredLogger
 	delSemaphore chan struct{}
+	reqPool      pool.ReqPools
 }
 
 // New конструктор обработчика. Зависим от:
 // - конфигурации.
 // - логгера.
 // - сервиса.
-func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
+func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service, reqPool pool.ReqPools) Handler {
 	return Handler{
 		conf:         conf,
 		service:      service,
 		logger:       logger,
 		delSemaphore: make(chan struct{}, conf.DeleteMaxPool),
+		reqPool:      reqPool,
 	}
 }
 
@@ -173,7 +176,8 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := models.ShortenReq{}
+	req := h.reqPool.ShortenReq.Get()
+	defer h.reqPool.ShortenReq.Put(req)
 
 	if umErr := json.Unmarshal(body, &req); umErr != nil {
 		h.logger.Error("unmarshall error", zap.Error(umErr))

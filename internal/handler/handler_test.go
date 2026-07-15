@@ -18,6 +18,7 @@ import (
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/models"
+	"github.com/spider4216/tinyurl/internal/pool"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/spider4216/tinyurl/internal/storage"
@@ -37,7 +38,15 @@ func prepateHandler(store storage.Storage) Handler {
 		panic("cannot prepare handler")
 	}
 
-	return New(conf, logger, s)
+	shReq := pool.New(func() *models.ShortenReq {
+		return &models.ShortenReq{}
+	})
+
+	reqPools := pool.ReqPools{
+		ShortenReq: shReq,
+	}
+
+	return New(conf, logger, s, reqPools)
 }
 
 func TestGetShortenUrl(t *testing.T) {
@@ -161,7 +170,15 @@ func ExampleHandler_GetShortenUrl() {
 		panic("cannot prepare handler")
 	}
 
-	h := New(cfg, logger, s)
+	shReq := pool.New(func() *models.ShortenReq {
+		return &models.ShortenReq{}
+	})
+
+	reqPools := pool.ReqPools{
+		ShortenReq: shReq,
+	}
+
+	h := New(cfg, logger, s, reqPools)
 
 	ctx := s.SetUserIdToCtx(r.Context(), "q1")
 	ctx = s.SetIsSignValidToCtx(ctx, true)

@@ -25,7 +25,7 @@ func main() {
 
 	repo := repository.New(app.store)
 	service := service.New(repo, app.logger, app.audit)
-	handler := handler.New(app.cfg, app.logger, service)
+	handler := handler.New(app.cfg, app.logger, service, app.reqPools)
 	middlewares := middleware.New(app.logger, app.cfg, service)
 
 	r := chi.NewRouter()

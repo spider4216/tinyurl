@@ -8,8 +8,6 @@ func (v *InsertData) Reset() {
 	v.UserId = ""
 }
 
-func (v *ShortenBatchReq) Reset() {
-	v.CorrelationId = ""
-
-	v.OriginalUrl = ""
+func (v *ShortenReq) Reset() {
+	v.Url = ""
 }
