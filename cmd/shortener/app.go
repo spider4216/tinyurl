@@ -15,12 +15,21 @@ import (
 	"github.com/spider4216/tinyurl/migrations"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 type app struct {
-	cfg      *config.Config
-	logger   *zap.SugaredLogger
-	store    storage.Storage
-	audit    audit.Publisher
-	reqPools pool.ReqPools
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+	cfg          *config.Config
+	logger       *zap.SugaredLogger
+	store        storage.Storage
+	audit        audit.Publisher
+	reqPools     pool.ReqPools
 }
 
 func newApp() app {
@@ -49,8 +58,15 @@ func (app *app) Run() error {
 	}
 
 	app.initReqPools()
+	app.initAppMeta()
 
 	return nil
+}
+
+func (app *app) initAppMeta() {
+	app.buildVersion = buildVersion
+	app.buildDate = buildDate
+	app.buildCommit = buildCommit
 }
 
 func (app *app) initReqPools() {

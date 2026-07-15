@@ -52,6 +52,10 @@ func main() {
 		IdleTimeout:  app.cfg.IdleTimeout,
 	}
 
+	app.logger.Infof("Build version: %s", app.buildVersion)
+	app.logger.Infof("Build date: %s", app.buildDate)
+	app.logger.Infof("Build commit: %s", app.buildCommit)
+
 	app.logger.Infof("Listen profile on: %s", app.cfg.ProfileHost)
 
 	// Run profile server
