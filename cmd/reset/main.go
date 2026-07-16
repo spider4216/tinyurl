@@ -25,6 +25,9 @@ package {{.Name}}
 {{range .Structs}}
 
 	func (v *{{.Name}}) Reset() {
+		if v == nil {
+			return
+		}
 
 		{{range .Fields}}
 
