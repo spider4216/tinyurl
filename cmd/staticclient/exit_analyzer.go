@@ -11,6 +11,8 @@ import (
 const (
 	mainPack string = "main"
 	testFile string = ".test"
+	osPkg    string = "os"
+	osExit   string = "Exit"
 )
 
 // OsExitAnalyzer анализатор проверяющий наличие вызова os.Exit
@@ -39,15 +41,26 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					ast.Inspect(m, func(n ast.Node) bool {
 						switch x := n.(type) {
 						case *ast.CallExpr:
-							if call, ok := x.Fun.(*ast.SelectorExpr); ok {
-								if ident, ok := call.X.(*ast.Ident); ok {
-									ispec, ok := pass.TypesInfo.Uses[ident].(*types.PkgName)
-									if ok {
-										if ispec.Imported().Path() == "os" && call.Sel.String() == "Exit" {
-											pass.Reportf(ident.NamePos, "os.Exit not allowed")
-										}
-									}
-								}
+							call, ok := x.Fun.(*ast.SelectorExpr)
+
+							if !ok {
+								return false
+							}
+
+							ident, ok := call.X.(*ast.Ident)
+
+							if !ok {
+								return false
+							}
+
+							ispec, ok := pass.TypesInfo.Uses[ident].(*types.PkgName)
+
+							if !ok {
+								return false
+							}
+
+							if ispec.Imported().Path() == osPkg && call.Sel.String() == osExit {
+								pass.Reportf(ident.NamePos, "os.Exit not allowed")
 							}
 						}
 
