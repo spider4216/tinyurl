@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/ast"
+	"go/types"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -40,8 +41,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						case *ast.CallExpr:
 							if call, ok := x.Fun.(*ast.SelectorExpr); ok {
 								if ident, ok := call.X.(*ast.Ident); ok {
-									if ident.Name == "os" && call.Sel.String() == "Exit" {
-										pass.Reportf(ident.NamePos, "os.Exit not allowed")
+									ispec, ok := pass.TypesInfo.Uses[ident].(*types.PkgName)
+									if ok {
+										if ispec.Imported().Path() == "os" && call.Sel.String() == "Exit" {
+											pass.Reportf(ident.NamePos, "os.Exit not allowed")
+										}
 									}
 								}
 							}
