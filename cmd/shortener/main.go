@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -52,9 +53,9 @@ func main() {
 		IdleTimeout:  app.cfg.IdleTimeout,
 	}
 
-	app.logger.Infof("Build version: %s", app.buildVersion)
-	app.logger.Infof("Build date: %s", app.buildDate)
-	app.logger.Infof("Build commit: %s", app.buildCommit)
+	fmt.Printf("\nBuild version: %s\n", app.buildVersion)
+	fmt.Printf("Build date: %s\n", app.buildDate)
+	fmt.Printf("Build commit: %s\n\n", app.buildCommit)
 
 	app.logger.Infof("Listen profile on: %s", app.cfg.ProfileHost)
 
