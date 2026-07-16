@@ -11,6 +11,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"log"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -226,7 +227,7 @@ func main() {
 	// Сканирую все пакеты проекта в internal
 	pkgs, err := packages.Load(cfg, loadPath)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Собираем мета данные
@@ -236,7 +237,7 @@ func main() {
 	genData := makeTplData(pkgs, allStructs)
 
 	if err := saveFiles(genData); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
