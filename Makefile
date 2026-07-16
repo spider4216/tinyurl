@@ -5,6 +5,9 @@ DATABASE_DSN?=postgres://postgres:postgres@localhost:5432/tinyurl
 run-slice:
 	go run ./cmd/shortener -l debug
 
+run-slice-with-meta:
+	go run -ldflags "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(shell date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(shell git rev-parse HEAD)'" ./cmd/shortener -l debug
+
 run-file:
 	go run ./cmd/shortener -l debug -f ./store.json
 
@@ -49,3 +52,9 @@ doc:
 
 doc-open:
 	firefox http://127.0.0.1:8080/pkg/github.com/spider4216/tinyurl/?m=all
+
+mcheck:
+	go run ./cmd/staticclient ./...
+
+genreset:
+	go run ./cmd/reset

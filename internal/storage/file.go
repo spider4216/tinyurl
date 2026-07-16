@@ -74,8 +74,8 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 
 	// Удаляем временный файл после завершения обновления
 	defer func() {
-		if err := os.Remove(tmpFile.Name()); err != nil {
-			fs.logger.Warn("cannot remove tmp file", zap.Error(err))
+		if rmErr := os.Remove(tmpFile.Name()); rmErr != nil {
+			fs.logger.Warn("cannot remove tmp file", zap.Error(rmErr))
 		}
 	}()
 
@@ -85,7 +85,7 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 
 		line := scanner.Bytes()
 
-		if err := json.Unmarshal(line, &rec); err != nil {
+		if umErr := json.Unmarshal(line, &rec); umErr != nil {
 			continue
 		}
 
@@ -94,34 +94,34 @@ func (fs *FileStorage) DeleteBatch(ctx context.Context, ids []string, userId str
 			rec.IsDeleted = true
 		}
 
-		updLine, err := json.Marshal(rec)
-		if err != nil {
-			return err
+		updLine, merr := json.Marshal(rec)
+		if merr != nil {
+			return merr
 		}
 
-		if _, err := tmpFile.Write(updLine); err != nil {
-			return err
+		if _, wErr := tmpFile.Write(updLine); wErr != nil {
+			return wErr
 		}
 
-		if _, err := tmpFile.Write([]byte("\n")); err != nil {
-			return err
+		if _, wErr := tmpFile.Write([]byte("\n")); wErr != nil {
+			return wErr
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return err
+	if scanErr := scanner.Err(); scanErr != nil {
+		return scanErr
 	}
 
 	originPath := fs.file.Name()
 
 	// Закрываем старый файл
-	if err := fs.file.Close(); err != nil {
-		return err
+	if closeErr := fs.file.Close(); closeErr != nil {
+		return closeErr
 	}
 
 	// Заменяем файл
-	if err := os.Rename(tmpFile.Name(), originPath); err != nil {
-		return err
+	if renErr := os.Rename(tmpFile.Name(), originPath); renErr != nil {
+		return renErr
 	}
 
 	// Открываем заново

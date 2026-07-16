@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -25,7 +26,7 @@ func main() {
 
 	repo := repository.New(app.store)
 	service := service.New(repo, app.logger, app.audit)
-	handler := handler.New(app.cfg, app.logger, service)
+	handler := handler.New(app.cfg, app.logger, service, app.reqPools)
 	middlewares := middleware.New(app.logger, app.cfg, service)
 
 	r := chi.NewRouter()
@@ -51,6 +52,10 @@ func main() {
 		WriteTimeout: app.cfg.WriteTimeout,
 		IdleTimeout:  app.cfg.IdleTimeout,
 	}
+
+	fmt.Printf("\nBuild version: %s\n", app.buildVersion)
+	fmt.Printf("Build date: %s\n", app.buildDate)
+	fmt.Printf("Build commit: %s\n\n", app.buildCommit)
 
 	app.logger.Infof("Listen profile on: %s", app.cfg.ProfileHost)
 

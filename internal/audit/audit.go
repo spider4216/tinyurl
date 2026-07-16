@@ -141,13 +141,12 @@ func (aso *AuditServerObserver) Update(data Body) error {
 	aso.Logger.Debug("Update in audit server observer")
 
 	resp, err := aso.Cli.R().SetBody(data).Post(aso.URL)
-
 	if err != nil {
 		return err
 	}
 
 	if resp.IsError() {
-		return fmt.Errorf("Audit server error. Code: %v", resp.StatusCode())
+		return fmt.Errorf("audit server error. Code: %v", resp.StatusCode())
 	}
 
 	return nil

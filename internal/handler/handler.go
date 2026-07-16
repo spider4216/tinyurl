@@ -12,6 +12,7 @@ import (
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/models"
+	"github.com/spider4216/tinyurl/internal/pool"
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
@@ -21,18 +22,20 @@ type Handler struct {
 	service      service.Service
 	logger       *zap.SugaredLogger
 	delSemaphore chan struct{}
+	reqPool      pool.ReqPools
 }
 
 // New конструктор обработчика. Зависим от:
 // - конфигурации.
 // - логгера.
 // - сервиса.
-func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service) Handler {
+func New(conf *config.Config, logger *zap.SugaredLogger, service service.Service, reqPool pool.ReqPools) Handler {
 	return Handler{
 		conf:         conf,
 		service:      service,
 		logger:       logger,
 		delSemaphore: make(chan struct{}, conf.DeleteMaxPool),
+		reqPool:      reqPool,
 	}
 }
 
@@ -123,8 +126,8 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	req := []models.ShortenBatchReq{}
 
-	if err := json.Unmarshal(body, &req); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if umErr := json.Unmarshal(body, &req); umErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(umErr))
 		return
 	}
 
@@ -137,16 +140,16 @@ func (h Handler) GetShortenUrls(w http.ResponseWriter, r *http.Request) {
 
 	urls := h.service.MapForMapUrlIds(req, userId)
 
-	if err := h.service.StoreDataBatch(ctx, urls); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if storeErr := h.service.StoreDataBatch(ctx, urls); storeErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(storeErr))
 		return
 	}
 
 	resp := h.MapGenUrlsResp(urls, h.conf.BaseUrl)
 
-	respJson, err := json.Marshal(resp)
-	if err != nil {
-		h.logger.Error("cannot marshall", zap.Error(err))
+	respJson, mErr := json.Marshal(resp)
+	if mErr != nil {
+		h.logger.Error("cannot marshall", zap.Error(mErr))
 		return
 	}
 
@@ -173,10 +176,11 @@ func (h Handler) GetShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := models.ShortenReq{}
+	req := h.reqPool.ShortenReq.Get()
+	defer h.reqPool.ShortenReq.Put(req)
 
-	if err := json.Unmarshal(body, &req); err != nil {
-		h.logger.Error("unmarshall error", zap.Error(err))
+	if umErr := json.Unmarshal(body, &req); umErr != nil {
+		h.logger.Error("unmarshall error", zap.Error(umErr))
 		return
 	}
 
