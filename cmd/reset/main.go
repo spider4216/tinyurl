@@ -39,7 +39,28 @@ package {{.Name}}
 
 				{{end}}
 
-				{{if eq .TypeName "int"}}
+				{{
+
+				if or
+				(eq .TypeName "int")
+				(eq .TypeName "int8")
+				(eq .TypeName "int16")
+				(eq .TypeName "int32")
+				(eq .TypeName "int64")
+				(eq .TypeName "uint")
+				(eq .TypeName "uint8")
+				(eq .TypeName "uint16")
+				(eq .TypeName "uint32")
+				(eq .TypeName "uint64")
+				(eq .TypeName "float32")
+				(eq .TypeName "float64")
+				(eq .TypeName "uintptr")
+				(eq .TypeName "complex64")
+				(eq .TypeName "complex128")
+				(eq .TypeName "rune")
+				(eq .TypeName "byte")
+
+				}}
 
 					v.{{.VarName}} = 0
 
@@ -63,7 +84,28 @@ package {{.Name}}
 
 					{{end}}
 
-					{{if eq .TypeName "int"}}
+					{{
+
+					if or
+					(eq .TypeName "int")
+					(eq .TypeName "int8")
+					(eq .TypeName "int16")
+					(eq .TypeName "int32")
+					(eq .TypeName "int64")
+					(eq .TypeName "uint")
+					(eq .TypeName "uint8")
+					(eq .TypeName "uint16")
+					(eq .TypeName "uint32")
+					(eq .TypeName "uint64")
+					(eq .TypeName "float32")
+					(eq .TypeName "float64")
+					(eq .TypeName "uintptr")
+					(eq .TypeName "complex64")
+					(eq .TypeName "complex128")
+					(eq .TypeName "rune")
+					(eq .TypeName "byte")
+
+					}}
 
 						*v.{{.VarName}} = 0
 
