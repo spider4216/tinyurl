@@ -73,7 +73,6 @@ func main() {
 		Type:  crtType,
 		Bytes: crtBytes,
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,24 +83,22 @@ func main() {
 		Type:  pkType,
 		Bytes: x509.MarshalPKCS1PrivateKey(pk),
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	wd, err := os.Getwd()
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	dir := filepath.Join(wd, crtDir)
 
-	if err = os.WriteFile(filepath.Join(dir, crtName), crtPEM.Bytes(), 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, crtName), crtPEM.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 
-	if err = os.WriteFile(filepath.Join(dir, pkName), pkPEM.Bytes(), 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, pkName), pkPEM.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 
