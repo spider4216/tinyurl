@@ -8,6 +8,9 @@ run-slice:
 run-slice-with-meta:
 	go run -ldflags "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(shell date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(shell git rev-parse HEAD)'" ./cmd/shortener -l debug
 
+run-slice-https:
+	go run ./cmd/shortener -l debug -s -b https://127.0.0.1:8080
+
 run-file:
 	go run ./cmd/shortener -l debug -f ./store.json
 

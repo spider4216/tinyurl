@@ -18,6 +18,7 @@ type Flags struct {
 	DbCon         string
 	AuditFile     string
 	AuditURL      string
+	Https         bool
 }
 
 func NewFlags() Flags {
@@ -32,6 +33,7 @@ func (f *Flags) Init() error {
 	dbCon := flag.String("d", "", "DB conection string")
 	auditFile := flag.String("audit-file", "", "Audit to file")
 	auditURL := flag.String("audit-url", "", "Audit to HTTP server")
+	httpsMode := flag.Bool("s", false, "Audit to HTTP server")
 
 	flag.Parse()
 
@@ -42,6 +44,7 @@ func (f *Flags) Init() error {
 	f.DbCon = *dbCon
 	f.AuditFile = *auditFile
 	f.AuditURL = *auditURL
+	f.Https = *httpsMode
 
 	return nil
 }

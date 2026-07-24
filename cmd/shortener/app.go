@@ -172,6 +172,12 @@ func (app *app) initConfig() error {
 		cfg.StoreDriver = storage.MapDriver
 	}
 
+	// Если флаг HTTPS установлен, то забираем из флага
+	// Иначе возьмется значение из переменной окруженя (+ def value если не передано)
+	if flags.Https {
+		cfg.Https = flags.Https
+	}
+
 	app.cfg = cfg
 
 	return nil

@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
+	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
@@ -68,7 +70,17 @@ func main() {
 
 	app.logger.Infof("Listen on: %s", app.cfg.ServerAddress)
 
-	if err := srv.ListenAndServe(); err != nil {
+	if err := runServer(srv, app.cfg, app.logger); err != nil {
 		app.logger.Fatalf("Server error: %s", err)
 	}
+}
+
+func runServer(srv *http.Server, cfg *config.Config, logger *zap.SugaredLogger) error {
+	if cfg.Https {
+		logger.Info("Run HTTPS mode")
+		return srv.ListenAndServeTLS(cfg.CrtPath, cfg.PKPath)
+	}
+
+	logger.Info("Run HTTP mode")
+	return srv.ListenAndServe()
 }
