@@ -58,3 +58,6 @@ mcheck:
 
 genreset:
 	go run ./cmd/reset
+
+crt:
+	go run ./cmd/cert
