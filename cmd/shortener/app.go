@@ -143,7 +143,6 @@ func (app *app) initConfig() error {
 
 	// Получаем файл конфигурации
 	fcfg, err := app.makeFileConfig(cfg.CfgFile)
-
 	if err != nil {
 		return err
 	}
@@ -237,7 +236,6 @@ func (app *app) initConfig() error {
 
 func (app *app) makeFileConfig(path string) (*config.Config, error) {
 	data, err := os.ReadFile(path)
-
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return &config.Config{}, nil
