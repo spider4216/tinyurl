@@ -133,8 +133,8 @@ func (app *app) initConfig() error {
 
 	flags := NewFlags()
 
-	if err := flags.Init(); err != nil {
-		return err
+	if errInit := flags.Init(); err != nil {
+		return errInit
 	}
 
 	if cfg.CfgFile == "" {
