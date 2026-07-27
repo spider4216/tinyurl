@@ -133,7 +133,7 @@ func (app *app) initConfig() error {
 
 	flags := NewFlags()
 
-	if errInit := flags.Init(); err != nil {
+	if errInit := flags.Init(); errInit != nil {
 		return errInit
 	}
 
