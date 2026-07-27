@@ -1,5 +1,5 @@
 package db
 
 type DbConfig struct {
-	DbDsn string `env:"DATABASE_DSN"` // Connection string для БД
+	DbDsn string `env:"DATABASE_DSN" json:"database_dsn"` // Connection string для БД
 }

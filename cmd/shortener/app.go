@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -133,32 +137,67 @@ func (app *app) initConfig() error {
 		return err
 	}
 
+	if cfg.CfgFile == "" {
+		cfg.CfgFile = flags.CfgFile
+	}
+
+	// Получаем файл конфигурации
+	fcfg, err := app.makeFileConfig(cfg.CfgFile)
+
+	if err != nil {
+		return err
+	}
+
 	if cfg.BaseUrl == "" {
 		cfg.BaseUrl = flags.BaseUrl
+	}
+
+	if cfg.BaseUrl == "" {
+		cfg.BaseUrl = fcfg.BaseUrl
 	}
 
 	if cfg.ServerAddress == "" {
 		cfg.ServerAddress = flags.ServerAddress
 	}
 
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = fcfg.ServerAddress
+	}
+
 	if cfg.LogLvl == "" {
 		cfg.LogLvl = flags.LogLvl
+	}
+
+	if cfg.LogLvl == "" {
+		cfg.LogLvl = fcfg.LogLvl
 	}
 
 	if cfg.FileStorePath == "" {
 		cfg.FileStorePath = flags.FileStorePath
 	}
 
+	if cfg.FileStorePath == "" {
+		cfg.FileStorePath = fcfg.FileStorePath
+	}
+
 	if cfg.DbDsn == "" {
 		cfg.DbDsn = flags.DbCon
+	}
+
+	if cfg.DbDsn == "" {
+		cfg.DbDsn = fcfg.DbDsn
 	}
 
 	if cfg.AuditFile == "" {
 		cfg.AuditFile = flags.AuditFile
 	}
 
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = fcfg.AuditFile
+	}
+
 	if cfg.AuditURL == "" {
-		cfg.AuditURL = flags.AuditURL
+		cfg.AuditURL = fcfg.AuditURL
 	}
 
 	// Если DSN установлен, значит дайвер pgx
@@ -172,15 +211,48 @@ func (app *app) initConfig() error {
 		cfg.StoreDriver = storage.MapDriver
 	}
 
-	// Если флаг HTTPS установлен, то забираем из флага
-	// Иначе возьмется значение из переменной окруженя (+ def value если не передано)
-	if flags.Https {
+	// Значение из файла - наименьший приоритет
+	cfg.Https = fcfg.Https
+
+	// Поскольку в конфигурации переменка bool, а у нее значение false по умолчанию
+	// Нужно понять была ли передана env
+	if value, exists := os.LookupEnv("ENABLE_HTTPS"); exists {
+		https, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+
+		cfg.Https = https
+	}
+
+	// Если флаг был передан, то учитываем его
+	if flags.HttpsSet {
 		cfg.Https = flags.Https
 	}
 
 	app.cfg = cfg
 
 	return nil
+}
+
+func (app *app) makeFileConfig(path string) (*config.Config, error) {
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &config.Config{}, nil
+		}
+
+		return nil, err
+	}
+
+	var cfg config.Config
+
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 func (app *app) initAudit() error {

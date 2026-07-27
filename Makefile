@@ -3,22 +3,25 @@ APP_NAME=tinyurl
 DATABASE_DSN?=postgres://postgres:postgres@localhost:5432/tinyurl
 
 run-slice:
-	go run ./cmd/shortener -l debug
+	go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
 run-slice-with-meta:
-	go run -ldflags "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(shell date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(shell git rev-parse HEAD)'" ./cmd/shortener -l debug
+	go run -ldflags "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(shell date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(shell git rev-parse HEAD)'" ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
 run-slice-https:
-	go run ./cmd/shortener -l debug -s -b https://127.0.0.1:8080
+	go run ./cmd/shortener -l debug -s -b https://127.0.0.1:8080 -a 127.0.0.1:8080
 
 run-file:
-	go run ./cmd/shortener -l debug -f ./store.json
+	go run ./cmd/shortener -l debug -f ./store.json -b http://127.0.0.1:8080 -a 127.0.0.1:8080
+
+run-file-with-config:
+	go run ./cmd/shortener -c ./config.json
 
 run-file-audit:
-	go run ./cmd/shortener -l debug -f ./store.json --audit-file ./audit.json --audit-url http://127.0.0.1
+	go run ./cmd/shortener -l debug -f ./store.json --audit-file ./audit.json --audit-url http://127.0.0.1 -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
 run-pgx:
-	DATABASE_DSN=${DATABASE_DSN} go run ./cmd/shortener -l debug
+	DATABASE_DSN=${DATABASE_DSN} go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
 test:
 	go test ./...

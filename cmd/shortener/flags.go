@@ -4,12 +4,6 @@ import (
 	"flag"
 )
 
-const (
-	defSrvAddr = "127.0.0.1:8080"
-	defBaseUrl = "http://127.0.0.1:8080"
-	defLogLvl  = "info"
-)
-
 type Flags struct {
 	ServerAddress string
 	BaseUrl       string
@@ -19,6 +13,8 @@ type Flags struct {
 	AuditFile     string
 	AuditURL      string
 	Https         bool
+	CfgFile       string
+	HttpsSet      bool
 }
 
 func NewFlags() Flags {
@@ -26,16 +22,23 @@ func NewFlags() Flags {
 }
 
 func (f *Flags) Init() error {
-	host := flag.String("a", defSrvAddr, "Net address host:port")
-	url := flag.String("b", defBaseUrl, "Provide base domain with protocol and port")
-	logLvl := flag.String("l", defLogLvl, "Log level: debug, info, warning, error, fatal")
+	host := flag.String("a", "", "Net address host:port")
+	url := flag.String("b", "", "Provide base domain with protocol and port")
+	logLvl := flag.String("l", "", "Log level: debug, info, warning, error, fatal")
 	fileStorePath := flag.String("f", "", "File store path")
 	dbCon := flag.String("d", "", "DB conection string")
 	auditFile := flag.String("audit-file", "", "Audit to file")
 	auditURL := flag.String("audit-url", "", "Audit to HTTP server")
 	httpsMode := flag.Bool("s", false, "Audit to HTTP server")
+	cfgPath := flag.String("c", "", "Config file path")
 
 	flag.Parse()
+
+	flag.Visit(func(fl *flag.Flag) {
+		if fl.Name == "s" {
+			f.HttpsSet = true
+		}
+	})
 
 	f.ServerAddress = *host
 	f.BaseUrl = *url
@@ -45,6 +48,7 @@ func (f *Flags) Init() error {
 	f.AuditFile = *auditFile
 	f.AuditURL = *auditURL
 	f.Https = *httpsMode
+	f.CfgFile = *cfgPath
 
 	return nil
 }
