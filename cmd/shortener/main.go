@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -15,6 +21,10 @@ import (
 	"github.com/spider4216/tinyurl/internal/service"
 
 	_ "net/http/pprof"
+)
+
+const (
+	serverTimeout time.Duration = 5 * time.Second
 )
 
 func main() {
@@ -61,16 +71,41 @@ func main() {
 
 	app.logger.Infof("Listen profile on: %s", app.cfg.ProfileHost)
 
+	srvProfile := &http.Server{
+		Addr: app.cfg.ProfileHost,
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	ctx, cancel := context.WithTimeout(context.Background(), serverTimeout)
+	defer cancel()
+
+	go func() {
+		app.logger.Debug("Graceful shutdown mode on")
+		<-sigs
+
+		app.logger.Debug("Shutdown all servers...")
+
+		if err := srvProfile.Shutdown(ctx); err != nil {
+			app.logger.Warnf("Cannot shutdown profile server: %s", err)
+		}
+
+		if err := srv.Shutdown(ctx); err != nil {
+			app.logger.Warnf("Cannot shutdown main server: %s", err)
+		}
+	}()
+
 	// Run profile server
 	go func() {
-		if err := http.ListenAndServe(app.cfg.ProfileHost, nil); err != nil {
+		if err := srvProfile.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			app.logger.Fatalf("Profile server error: %s", err)
 		}
 	}()
 
 	app.logger.Infof("Listen on: %s", app.cfg.ServerAddress)
 
-	if err := runServer(srv, app.cfg, app.logger); err != nil {
+	if err := runServer(srv, app.cfg, app.logger); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		app.logger.Fatalf("Server error: %s", err)
 	}
 }
