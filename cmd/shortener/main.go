@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -75,23 +74,26 @@ func main() {
 		Addr: app.cfg.ProfileHost,
 	}
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-
-	ctx, cancel := context.WithTimeout(context.Background(), serverTimeout)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
 
 	go func() {
 		app.logger.Debug("Graceful shutdown mode on")
-		<-sigs
+		<-ctx.Done()
+
+		// Тут тоже останавляваем перехват сигналов
+		stop()
 
 		app.logger.Debug("Shutdown all servers...")
 
-		if err := srvProfile.Shutdown(ctx); err != nil {
+		ctxShutdown, cancel := context.WithTimeout(context.Background(), serverTimeout)
+		defer cancel()
+
+		if err := srvProfile.Shutdown(ctxShutdown); err != nil {
 			app.logger.Warnf("Cannot shutdown profile server: %s", err)
 		}
 
-		if err := srv.Shutdown(ctx); err != nil {
+		if err := srv.Shutdown(ctxShutdown); err != nil {
 			app.logger.Warnf("Cannot shutdown main server: %s", err)
 		}
 	}()
