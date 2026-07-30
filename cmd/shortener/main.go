@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -74,10 +75,15 @@ func main() {
 		Addr: app.cfg.ProfileHost,
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer stop()
 
 	go func() {
+		defer wg.Done()
+
 		app.logger.Debug("Graceful shutdown mode on")
 		<-ctx.Done()
 
@@ -110,6 +116,8 @@ func main() {
 	if err := runServer(srv, app.cfg, app.logger); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		app.logger.Fatalf("Server error: %s", err)
 	}
+
+	wg.Wait()
 }
 
 func runServer(srv *http.Server, cfg *config.Config, logger *zap.SugaredLogger) error {
