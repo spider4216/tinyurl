@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -34,7 +35,13 @@ func main() {
 		log.Fatal("Cannot run app", err)
 	}
 
-	app.logger.Debug("Config: ", app.cfg)
+	pretyCfg, err := json.MarshalIndent(app.cfg, "", " ")
+
+	if err != nil {
+		app.logger.Fatalf("Error while run app: %s", err)
+	}
+
+	app.logger.Debug("Config: ", string(pretyCfg))
 
 	repo := repository.New(app.store)
 	service := service.New(repo, app.logger, app.audit)

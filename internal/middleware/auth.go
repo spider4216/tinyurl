@@ -18,7 +18,7 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		if m.cfg.SignKey == "" {
 			m.logger.Errorf("cannot find sign key. Set and try again.")
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 

@@ -8,10 +8,12 @@ import (
 	"os"
 	"strconv"
 
+	"dario.cat/mergo"
 	"go.uber.org/zap"
 
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/config/db"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/pool"
@@ -126,7 +128,9 @@ func (app *app) initLogger() error {
 }
 
 func (app *app) initConfig() error {
-	cfg, err := config.New()
+	var cfg config.Config
+
+	cfgEnv, err := config.New()
 	if err != nil {
 		return err
 	}
@@ -137,71 +141,23 @@ func (app *app) initConfig() error {
 		return errInit
 	}
 
-	if cfg.CfgFile == "" {
-		cfg.CfgFile = flags.CfgFile
+	cfgFlags := makeFlagConfig(flags)
+
+	cfgPath := cfgEnv.CfgFile
+
+	if cfgPath == "" {
+		cfgPath = flags.CfgFile
 	}
 
 	// Получаем файл конфигурации
-	fcfg, err := app.makeFileConfig(cfg.CfgFile)
+	cfgFile, err := app.makeFileConfig(cfgPath)
 	if err != nil {
 		return err
 	}
 
-	if cfg.BaseUrl == "" {
-		cfg.BaseUrl = flags.BaseUrl
-	}
-
-	if cfg.BaseUrl == "" {
-		cfg.BaseUrl = fcfg.BaseUrl
-	}
-
-	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = flags.ServerAddress
-	}
-
-	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = fcfg.ServerAddress
-	}
-
-	if cfg.LogLvl == "" {
-		cfg.LogLvl = flags.LogLvl
-	}
-
-	if cfg.LogLvl == "" {
-		cfg.LogLvl = fcfg.LogLvl
-	}
-
-	if cfg.FileStorePath == "" {
-		cfg.FileStorePath = flags.FileStorePath
-	}
-
-	if cfg.FileStorePath == "" {
-		cfg.FileStorePath = fcfg.FileStorePath
-	}
-
-	if cfg.DbDsn == "" {
-		cfg.DbDsn = flags.DbCon
-	}
-
-	if cfg.DbDsn == "" {
-		cfg.DbDsn = fcfg.DbDsn
-	}
-
-	if cfg.AuditFile == "" {
-		cfg.AuditFile = flags.AuditFile
-	}
-
-	if cfg.AuditFile == "" {
-		cfg.AuditFile = fcfg.AuditFile
-	}
-
-	if cfg.AuditURL == "" {
-		cfg.AuditURL = flags.AuditURL
-	}
-
-	if cfg.AuditURL == "" {
-		cfg.AuditURL = fcfg.AuditURL
-	}
+	mergo.Merge(&cfg, cfgEnv)
+	mergo.Merge(&cfg, cfgFlags)
+	mergo.Merge(&cfg, cfgFile)
 
 	// Если DSN установлен, значит дайвер pgx
 	if cfg.DbDsn != "" {
@@ -215,7 +171,8 @@ func (app *app) initConfig() error {
 	}
 
 	// Значение из файла - наименьший приоритет
-	cfg.Https = fcfg.Https
+	// Для boolean оставляем кастом логику
+	cfg.Https = cfgFile.Https
 
 	// Поскольку в конфигурации переменка bool, а у нее значение false по умолчанию
 	// Нужно понять была ли передана env
@@ -233,9 +190,26 @@ func (app *app) initConfig() error {
 		cfg.Https = flags.Https
 	}
 
-	app.cfg = cfg
+	app.cfg = &cfg
 
 	return nil
+}
+
+func makeFlagConfig(flag Flags) *config.Config {
+	return &config.Config{
+		ServerAddress: flag.ServerAddress,
+		BaseUrl:       flag.BaseUrl,
+		LogLvl:        flag.LogLvl,
+		FileStorePath: flag.FileStorePath,
+		DbConfig: db.DbConfig{
+			DbDsn: flag.DbCon,
+		},
+		AuditFile: flag.AuditFile,
+		AuditURL:  flag.AuditURL,
+		Https:     flag.HttpsSet,
+		CfgFile:   flag.CfgFile,
+	}
+
 }
 
 func (app *app) makeFileConfig(path string) (*config.Config, error) {
