@@ -219,7 +219,7 @@ func (app *app) initConfig() error {
 
 	// Поскольку в конфигурации переменка bool, а у нее значение false по умолчанию
 	// Нужно понять была ли передана env
-	if value, exists := os.LookupEnv("ENABLE_HTTPS"); exists {
+	if value, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
 		https, err := strconv.ParseBool(value)
 		if err != nil {
 			return err
