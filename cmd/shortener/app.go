@@ -196,6 +196,10 @@ func (app *app) initConfig() error {
 	}
 
 	if cfg.AuditURL == "" {
+		cfg.AuditURL = flags.AuditURL
+	}
+
+	if cfg.AuditURL == "" {
 		cfg.AuditURL = fcfg.AuditURL
 	}
 
