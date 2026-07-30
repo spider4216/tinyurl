@@ -21,7 +21,7 @@ type Config struct {
 	IdleTimeout   time.Duration `env:"IDLE_TIMEOUT" envDefault:"30s" json:"idle_timeout"`
 	MaxBodySize   int64         `env:"MAX_BODY_SIZE" envDefault:"2048" json:"max_body_size"`
 	CookieTTL     time.Duration `env:"COOKIE_TTL" envDefault:"24h" json:"cookie_ttl"`
-	SignKey       string        `env:"SIGN_KEY" envDefault:"qwerty" json:"sign_key"`          // Ключ для подписи значения куки
+	SignKey       string        `env:"SIGN_KEY" json:"sign_key"`                              // Ключ для подписи значения куки
 	DeleteMaxPool int           `env:"DEL_MAX_POOL" envDefault:"10" json:"del_max_pool"`      // Кол-во одновременно вып-мых задач на удаление
 	AuditFile     string        `env:"AUDIT_FILE" json:"audit_file"`                          // Аудит в файл
 	AuditURL      string        `env:"AUDIT_URL" json:"audit_url"`                            // Аудит на сервер по HTTP
