@@ -36,7 +36,6 @@ func main() {
 	}
 
 	pretyCfg, err := json.MarshalIndent(app.cfg, "", " ")
-
 	if err != nil {
 		app.logger.Fatalf("Error while run app: %s", err)
 	}

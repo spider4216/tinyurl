@@ -155,9 +155,17 @@ func (app *app) initConfig() error {
 		return err
 	}
 
-	mergo.Merge(&cfg, cfgEnv)
-	mergo.Merge(&cfg, cfgFlags)
-	mergo.Merge(&cfg, cfgFile)
+	if err := mergo.Merge(&cfg, cfgEnv); err != nil {
+		return err
+	}
+
+	if err := mergo.Merge(&cfg, cfgFlags); err != nil {
+		return err
+	}
+
+	if err := mergo.Merge(&cfg, cfgFile); err != nil {
+		return err
+	}
 
 	// Если DSN установлен, значит дайвер pgx
 	if cfg.DbDsn != "" {
@@ -209,7 +217,6 @@ func makeFlagConfig(flag Flags) *config.Config {
 		Https:     flag.HttpsSet,
 		CfgFile:   flag.CfgFile,
 	}
-
 }
 
 func (app *app) makeFileConfig(path string) (*config.Config, error) {
