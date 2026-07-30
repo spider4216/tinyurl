@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"math/big"
 	"net"
@@ -102,5 +101,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Certs were generated into %s dir\n", dir)
+	log.Printf("Certs were generated into %s dir\n", dir)
 }
