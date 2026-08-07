@@ -55,12 +55,12 @@ func (r *Repository) GetByUserId(ctx context.Context, userId string) ([]models.U
 	return r.store.GetByUserId(ctx, userId)
 }
 
-// CountUsers возвращает кол-во униникальных пользователей
+// CountUsers возвращает кол-во униникальных пользователей.
 func (r *Repository) CountUsers(ctx context.Context) (int, error) {
 	return r.store.CountUsers(ctx)
 }
 
-// CountUrls возвращает общее кол-во сокращенных URL
+// CountUrls возвращает общее кол-во сокращенных URL.
 func (r *Repository) CountUrls(ctx context.Context) (int, error) {
 	return r.store.CountUrls(ctx)
 }

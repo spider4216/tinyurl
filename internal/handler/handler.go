@@ -407,7 +407,7 @@ func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("Ping store OK")
 }
 
-// Ping проверка доступности источника данных.
+// Stat внутренний эндпоинт показывающий статистику по сервису.
 func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
 

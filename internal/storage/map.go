@@ -220,7 +220,7 @@ func (ms *MapStorage) CreateUrls(ctx context.Context, data []models.InsertData) 
 	return nil
 }
 
-// CountUsers количество пользователей в сервисе
+// CountUsers количество пользователей в сервисе.
 func (ms *MapStorage) CountUsers(ctx context.Context) (int, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -251,7 +251,7 @@ func (ms *MapStorage) CountUsers(ctx context.Context) (int, error) {
 	return len(res), nil
 }
 
-// CountUrls количество сокращённых URL в сервисе
+// CountUrls количество сокращённых URL в сервисе.
 func (ms *MapStorage) CountUrls(ctx context.Context) (int, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()

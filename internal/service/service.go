@@ -176,12 +176,12 @@ func (s Service) AuditNotify(action audit.AuditAction, userID string, url string
 	s.audit.Notify(n)
 }
 
-// CountUsers возвращает кол-во униникальных пользователей
+// CountUsers возвращает кол-во униникальных пользователей.
 func (s Service) CountUsers(ctx context.Context) (int, error) {
 	return s.repo.CountUsers(ctx)
 }
 
-// CountUrls возвращает общее кол-во сокращенных URL
+// CountUrls возвращает общее кол-во сокращенных URL.
 func (s Service) CountUrls(ctx context.Context) (int, error) {
 	return s.repo.CountUrls(ctx)
 }

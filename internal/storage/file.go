@@ -288,7 +288,7 @@ func (fs *FileStorage) CreateUrls(ctx context.Context, data []models.InsertData)
 	return nil
 }
 
-// CountUsers количество пользователей в сервисе
+// CountUsers количество пользователей в сервисе.
 func (fs *FileStorage) CountUsers(ctx context.Context) (int, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -330,7 +330,7 @@ func (fs *FileStorage) CountUsers(ctx context.Context) (int, error) {
 	return len(res), nil
 }
 
-// CountUrls количество сокращённых URL в сервисе
+// CountUrls количество сокращённых URL в сервисе.
 func (fs *FileStorage) CountUrls(ctx context.Context) (int, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

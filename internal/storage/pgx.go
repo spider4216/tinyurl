@@ -144,7 +144,7 @@ func (db *PgxStorage) GetByShort(ctx context.Context, short string) (*models.Url
 	}, nil
 }
 
-// CountUsers количество пользователей в сервисе
+// CountUsers количество пользователей в сервисе.
 func (db *PgxStorage) CountUsers(ctx context.Context) (int, error) {
 	sql := "SELECT COUNT(DISTINCT user_id) from urls where is_deleted=false"
 
@@ -159,7 +159,7 @@ func (db *PgxStorage) CountUsers(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-// CountUrls количество сокращённых URL в сервисе
+// CountUrls количество сокращённых URL в сервисе.
 func (db *PgxStorage) CountUrls(ctx context.Context) (int, error) {
 	sql := "SELECT COUNT(*) from urls where is_deleted=false"
 
