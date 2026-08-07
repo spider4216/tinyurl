@@ -7,7 +7,7 @@ import (
 
 // WithSubnet проверяет, что переданный в заголовке запроса X-Real-IP IP-адрес
 // клиента входит в доверенную подсеть, в противном случае возвращает
-// статус ответа 403 Forbidden
+// статус ответа 403 Forbidden.
 func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		subnet := m.cfg.TrustSubnet
