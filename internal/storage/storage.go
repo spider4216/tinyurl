@@ -52,6 +52,12 @@ type Storage interface {
 
 	// CreateUrls создает в хранилище множество сокращенных url (пачки).
 	CreateUrls(ctx context.Context, data []models.InsertData) error
+
+	// CountUsers возвращает кол-во униникальных пользователей
+	CountUsers(ctx context.Context) (int, error)
+
+	// CountUrls возвращает общее кол-во сокращенных URL
+	CountUrls(ctx context.Context) (int, error)
 }
 
 // New конструктор хранилища, создает конкретное хранилище по идентификатору.

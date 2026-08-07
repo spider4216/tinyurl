@@ -406,3 +406,46 @@ func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	h.logger.Info("Ping store OK")
 }
+
+// Ping проверка доступности источника данных.
+func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+
+	defer cancel()
+
+	users, err := h.service.CountUsers(ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Error("Cannot count users", zap.Error(err))
+		return
+	}
+
+	urls, err := h.service.CountUrls(ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Error("Cannot count urls", zap.Error(err))
+		return
+	}
+
+	resp := models.StatResp{
+		UrlsCount:  urls,
+		UsersCount: users,
+	}
+
+	b, err := json.Marshal(resp)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Error("Cannot prepare response", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	if _, err := w.Write(b); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Error("failed to write response", zap.Error(err))
+	}
+}

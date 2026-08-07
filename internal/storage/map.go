@@ -219,3 +219,59 @@ func (ms *MapStorage) CreateUrls(ctx context.Context, data []models.InsertData) 
 
 	return nil
 }
+
+// CountUsers количество пользователей в сервисе
+func (ms *MapStorage) CountUsers(ctx context.Context) (int, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	var res []string
+
+	for _, item := range ms.store {
+		var line recordSlice
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return 0, err
+		}
+
+		if line.IsDeleted == "true" {
+			continue
+		}
+
+		res = append(res, line.UserId)
+	}
+
+	ms.logger.Debug("Count users before unique", len(res))
+
+	slices.Sort(res)
+	res = slices.Compact(res)
+
+	ms.logger.Debug("Count users after unique", len(res))
+
+	return len(res), nil
+
+}
+
+// CountUrls количество сокращённых URL в сервисе
+func (ms *MapStorage) CountUrls(ctx context.Context) (int, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	var res []recordSlice
+
+	for _, item := range ms.store {
+		var line recordSlice
+
+		if err := json.Unmarshal([]byte(item), &line); err != nil {
+			return 0, err
+		}
+
+		if line.IsDeleted == "true" {
+			continue
+		}
+
+		res = append(res, line)
+	}
+
+	return len(res), nil
+}
