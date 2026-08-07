@@ -249,7 +249,6 @@ func (ms *MapStorage) CountUsers(ctx context.Context) (int, error) {
 	ms.logger.Debug("Count users after unique", len(res))
 
 	return len(res), nil
-
 }
 
 // CountUrls количество сокращённых URL в сервисе

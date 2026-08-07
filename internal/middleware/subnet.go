@@ -19,7 +19,6 @@ func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 		}
 
 		_, network, err := net.ParseCIDR(subnet)
-
 		if err != nil {
 			m.logger.Error("cannot parse CIDR")
 			w.WriteHeader(http.StatusForbidden)

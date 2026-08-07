@@ -414,7 +414,6 @@ func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	users, err := h.service.CountUsers(ctx)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.logger.Error("Cannot count users", zap.Error(err))
@@ -422,7 +421,6 @@ func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urls, err := h.service.CountUrls(ctx)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.logger.Error("Cannot count urls", zap.Error(err))
@@ -435,7 +433,6 @@ func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	b, err := json.Marshal(resp)
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.logger.Error("Cannot prepare response", zap.Error(err))

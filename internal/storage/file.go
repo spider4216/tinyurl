@@ -328,7 +328,6 @@ func (fs *FileStorage) CountUsers(ctx context.Context) (int, error) {
 	fs.logger.Debug("Count users after unique", len(res))
 
 	return len(res), nil
-
 }
 
 // CountUrls количество сокращённых URL в сервисе
@@ -364,5 +363,4 @@ func (fs *FileStorage) CountUrls(ctx context.Context) (int, error) {
 	}
 
 	return len(res), nil
-
 }
