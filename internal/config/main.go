@@ -30,6 +30,7 @@ type Config struct {
 	PKPath        string        `env:"PK_PATH" envDefault:"certs/private.pem" json:"pk_path"` // Путь до приватного ключа для режимо HTTPS
 	Https         bool          `env:"ENABLE_HTTPS" json:"enable_https"`                      // Режим HTTPS
 	CfgFile       string        `env:"CONFIG"`                                                // Путь до файла конфигурации
+	TrustSubnet   string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`                  // Строковое представление бесклассовой адресации (CIDR)
 }
 
 func New() (*Config, error) {

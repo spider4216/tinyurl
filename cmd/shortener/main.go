@@ -61,7 +61,12 @@ func main() {
 		r.Post("/api/shorten/batch", http.HandlerFunc(handler.GetShortenUrls))
 		r.Get("/api/user/urls", http.HandlerFunc(handler.Urls))
 		r.Delete("/api/user/urls", http.HandlerFunc(handler.DeleteUrls))
-		r.Get("/api/internal/stats", http.HandlerFunc(handler.Stat))
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.WithSubnet)
+
+			r.Get("/api/internal/stats", http.HandlerFunc(handler.Stat))
+		})
 	})
 
 	srv := &http.Server{

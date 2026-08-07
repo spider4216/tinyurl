@@ -24,6 +24,9 @@ run-file-audit:
 run-pgx:
 	SIGN_KEY=${SIGN_KEY} DATABASE_DSN=${DATABASE_DSN} go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
+run-slice-subnet:
+	SIGN_KEY=${SIGN_KEY} go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080 -t 192.168.1.0/24
+
 test:
 	go test ./...
 

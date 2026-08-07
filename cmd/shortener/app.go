@@ -212,10 +212,11 @@ func makeFlagConfig(flag Flags) *config.Config {
 		DbConfig: db.DbConfig{
 			DbDsn: flag.DbCon,
 		},
-		AuditFile: flag.AuditFile,
-		AuditURL:  flag.AuditURL,
-		Https:     flag.HttpsSet,
-		CfgFile:   flag.CfgFile,
+		AuditFile:   flag.AuditFile,
+		AuditURL:    flag.AuditURL,
+		Https:       flag.HttpsSet,
+		CfgFile:     flag.CfgFile,
+		TrustSubnet: flag.TrustSubnet,
 	}
 }
 
