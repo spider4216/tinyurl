@@ -1,13 +1,19 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"strconv"
 
+	"dario.cat/mergo"
 	"go.uber.org/zap"
 
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
+	"github.com/spider4216/tinyurl/internal/config/db"
 	"github.com/spider4216/tinyurl/internal/logger"
 	"github.com/spider4216/tinyurl/internal/models"
 	"github.com/spider4216/tinyurl/internal/pool"
@@ -122,43 +128,43 @@ func (app *app) initLogger() error {
 }
 
 func (app *app) initConfig() error {
-	cfg, err := config.New()
+	var cfg config.Config
+
+	cfgEnv, err := config.New()
 	if err != nil {
 		return err
 	}
 
 	flags := NewFlags()
 
-	if err := flags.Init(); err != nil {
+	if errInit := flags.Init(); errInit != nil {
+		return errInit
+	}
+
+	cfgFlags := makeFlagConfig(flags)
+
+	cfgPath := cfgEnv.CfgFile
+
+	if cfgPath == "" {
+		cfgPath = flags.CfgFile
+	}
+
+	// Получаем файл конфигурации
+	cfgFile, err := app.makeFileConfig(cfgPath)
+	if err != nil {
 		return err
 	}
 
-	if cfg.BaseUrl == "" {
-		cfg.BaseUrl = flags.BaseUrl
+	if err := mergo.Merge(&cfg, cfgEnv); err != nil {
+		return err
 	}
 
-	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = flags.ServerAddress
+	if err := mergo.Merge(&cfg, cfgFlags); err != nil {
+		return err
 	}
 
-	if cfg.LogLvl == "" {
-		cfg.LogLvl = flags.LogLvl
-	}
-
-	if cfg.FileStorePath == "" {
-		cfg.FileStorePath = flags.FileStorePath
-	}
-
-	if cfg.DbDsn == "" {
-		cfg.DbDsn = flags.DbCon
-	}
-
-	if cfg.AuditFile == "" {
-		cfg.AuditFile = flags.AuditFile
-	}
-
-	if cfg.AuditURL == "" {
-		cfg.AuditURL = flags.AuditURL
+	if err := mergo.Merge(&cfg, cfgFile); err != nil {
+		return err
 	}
 
 	// Если DSN установлен, значит дайвер pgx
@@ -172,9 +178,64 @@ func (app *app) initConfig() error {
 		cfg.StoreDriver = storage.MapDriver
 	}
 
-	app.cfg = cfg
+	// Значение из файла - наименьший приоритет
+	// Для boolean оставляем кастом логику
+	cfg.Https = cfgFile.Https
+
+	// Поскольку в конфигурации переменка bool, а у нее значение false по умолчанию
+	// Нужно понять была ли передана env
+	if value, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
+		https, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+
+		cfg.Https = https
+	}
+
+	// Если флаг был передан, то учитываем его
+	if flags.HttpsSet {
+		cfg.Https = flags.Https
+	}
+
+	app.cfg = &cfg
 
 	return nil
+}
+
+func makeFlagConfig(flag Flags) *config.Config {
+	return &config.Config{
+		ServerAddress: flag.ServerAddress,
+		BaseUrl:       flag.BaseUrl,
+		LogLvl:        flag.LogLvl,
+		FileStorePath: flag.FileStorePath,
+		DbConfig: db.DbConfig{
+			DbDsn: flag.DbCon,
+		},
+		AuditFile: flag.AuditFile,
+		AuditURL:  flag.AuditURL,
+		Https:     flag.HttpsSet,
+		CfgFile:   flag.CfgFile,
+	}
+}
+
+func (app *app) makeFileConfig(path string) (*config.Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &config.Config{}, nil
+		}
+
+		return nil, err
+	}
+
+	var cfg config.Config
+
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 func (app *app) initAudit() error {

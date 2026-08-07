@@ -16,6 +16,12 @@ import (
 // WithAuth прослойка для аутинтификации и авторизации
 func (m Middleware) WithAuth(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
+		if m.cfg.SignKey == "" {
+			m.logger.Errorf("cannot find sign key. Set and try again.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		authCookie, err := r.Cookie("user_id")
 		var userId string
 		var sign string
