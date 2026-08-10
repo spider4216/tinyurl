@@ -66,7 +66,7 @@ func (i *Interceptor) WithAuth(
 
 		// Устанавливаем ключ в metadata
 		err = grpc.SetHeader(ctx, metadata.Pairs(
-			authKey, sign,
+			authKey, userId+"."+sign,
 		))
 
 		if err != nil {
