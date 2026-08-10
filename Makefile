@@ -6,6 +6,9 @@ SIGN_KEY?=qwerty
 run-slice:
 	SIGN_KEY=${SIGN_KEY} go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
+run-slice-with-grpc:
+	SIGN_KEY=${SIGN_KEY} go run ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080 -g :7777
+
 run-slice-with-meta:
 	SIGN_KEY=${SIGN_KEY} go run -ldflags "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(shell date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(shell git rev-parse HEAD)'" ./cmd/shortener -l debug -b http://127.0.0.1:8080 -a 127.0.0.1:8080
 
@@ -71,3 +74,6 @@ genreset:
 
 crt:
 	go run ./cmd/cert
+
+proto-gen:
+	protoc -I=. -I=/opt/protoc/include --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=default_api_level=API_OPAQUE proto/shortener.proto

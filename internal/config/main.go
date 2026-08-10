@@ -31,6 +31,7 @@ type Config struct {
 	Https         bool          `env:"ENABLE_HTTPS" json:"enable_https"`                      // Режим HTTPS
 	CfgFile       string        `env:"CONFIG"`                                                // Путь до файла конфигурации
 	TrustSubnet   string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`                  // Строковое представление бесклассовой адресации (CIDR)
+	GRPCHost      string        `env:"GRPC_HOST" json:"jrpc_host"`                            // Если указать GRPC Host то запустится GRPC сервер
 }
 
 func New() (*Config, error) {

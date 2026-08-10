@@ -16,6 +16,7 @@ type Flags struct {
 	CfgFile       string
 	HttpsSet      bool
 	TrustSubnet   string
+	GRPCHost      string
 }
 
 func NewFlags() Flags {
@@ -33,6 +34,7 @@ func (f *Flags) Init() error {
 	httpsMode := flag.Bool("s", false, "Audit to HTTP server")
 	cfgPath := flag.String("c", "", "Config file path")
 	subnet := flag.String("t", "", "Trusted subnet for internal endpoints")
+	grpcHost := flag.String("g", "", "GRPC host and port")
 
 	flag.Parse()
 
@@ -52,6 +54,7 @@ func (f *Flags) Init() error {
 	f.Https = *httpsMode
 	f.CfgFile = *cfgPath
 	f.TrustSubnet = *subnet
+	f.GRPCHost = *grpcHost
 
 	return nil
 }

@@ -217,6 +217,7 @@ func makeFlagConfig(flag Flags) *config.Config {
 		Https:       flag.HttpsSet,
 		CfgFile:     flag.CfgFile,
 		TrustSubnet: flag.TrustSubnet,
+		GRPCHost:    flag.GRPCHost,
 	}
 }
 

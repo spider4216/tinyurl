@@ -3,26 +3,28 @@ module github.com/spider4216/tinyurl
 go 1.26.3
 
 require (
+	dario.cat/mergo v1.0.2
 	github.com/caarlos0/env/v11 v11.4.0
+	github.com/charithe/durationcheck v0.0.11
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
+	github.com/gostaticanalysis/nilerr v0.1.2
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.1
 	golang.org/x/tools v0.48.0
+	google.golang.org/grpc v1.74.2
+	google.golang.org/protobuf v1.36.7
 	honnef.co/go/tools v0.7.0
 )
 
 require (
-	dario.cat/mergo v1.0.2 // indirect
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
-	github.com/charithe/durationcheck v0.0.11 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
-	github.com/gostaticanalysis/nilerr v0.1.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -34,6 +36,8 @@ require (
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
