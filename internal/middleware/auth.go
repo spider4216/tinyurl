@@ -1,10 +1,6 @@
 package middleware
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -40,7 +36,7 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 			userId = uuid.NewString()
 
 			// Подписываем новый идентификатор
-			sign, err = m.signVal(userId, m.cfg.SignKey)
+			sign, err = m.service.SignVal(userId, m.cfg.SignKey)
 			if err != nil {
 				m.logger.Error("cannot sign cookie", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -86,7 +82,7 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 		isValid := false
 
 		// Валидируем куку
-		if err := m.validateSign(userId, m.cfg.SignKey, sign); err == nil {
+		if err := m.service.ValidateSign(userId, m.cfg.SignKey, sign); err == nil {
 			isValid = true
 		}
 
@@ -108,19 +104,6 @@ func (m Middleware) WithAuth(h http.Handler) http.Handler {
 	return http.HandlerFunc(logFn)
 }
 
-// Подпись строки
-func (m Middleware) signVal(val string, key string) (string, error) {
-	h := hmac.New(sha256.New, []byte(key))
-
-	if _, err := h.Write([]byte(val)); err != nil {
-		return "", err
-	}
-
-	sign := h.Sum(nil)
-
-	return hex.EncodeToString(sign), nil
-}
-
 func (m Middleware) createCookie(userId string, sign string) http.Cookie {
 	return http.Cookie{
 		Name:     "user_id",
@@ -131,30 +114,4 @@ func (m Middleware) createCookie(userId string, sign string) http.Cookie {
 		Secure:   true,                 // Only sent over HTTPS
 		SameSite: http.SameSiteLaxMode, // CSRF protection
 	}
-}
-
-func (m Middleware) validateSign(val string, key string, sig string) error {
-	// Подписываем ключ
-	f, err := m.signVal(val, key)
-	if err != nil {
-		return err
-	}
-
-	// Декодим и получаем байты
-	src, err := hex.DecodeString(f)
-	if err != nil {
-		return err
-	}
-
-	// Декодим подпись которую нужно проверить
-	dst, err := hex.DecodeString(sig)
-	if err != nil {
-		return err
-	}
-
-	if hmac.Equal(src, dst) {
-		return nil
-	}
-
-	return errors.New("invalid signature")
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/spider4216/tinyurl/internal/config"
 	mygrpc "github.com/spider4216/tinyurl/internal/grpc"
+	"github.com/spider4216/tinyurl/internal/grpc/interceptors"
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
@@ -92,7 +93,9 @@ func main() {
 		Addr: app.cfg.ProfileHost,
 	}
 
-	grpcSrv := grpc.NewServer()
+	interceptors := interceptors.New(app.cfg, service, app.logger)
+
+	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(interceptors.WithAuth))
 
 	// Если GRPC в конфигурации указан, то запускаем сервер
 	if app.cfg.GRPCHost != "" {
