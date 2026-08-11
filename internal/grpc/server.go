@@ -91,9 +91,9 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest
 	var deletedError service.DeletedUrlError
 
 	if errors.As(err, &deletedError) {
-		err := errors.New("url was deleted")
-		s.logger.Error(err)
-		return nil, status.Error(codes.NotFound, err.Error())
+		errDel := errors.New("url was deleted")
+		s.logger.Error(errDel)
+		return nil, status.Error(codes.NotFound, errDel.Error())
 	}
 
 	if err != nil {

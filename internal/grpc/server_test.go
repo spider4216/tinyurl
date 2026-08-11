@@ -52,8 +52,8 @@ func TestShortenURL(t *testing.T) {
 	pb.RegisterShortenerServiceServer(grpcSrv, myGrpcSrv)
 
 	go func() {
-		if err := grpcSrv.Serve(listen); err != nil {
-			t.Errorf("server error: %v", err)
+		if errSrv := grpcSrv.Serve(listen); errSrv != nil {
+			t.Errorf("server error: %v", errSrv)
 		}
 	}()
 
@@ -66,8 +66,8 @@ func TestShortenURL(t *testing.T) {
 
 	require.NoError(t, err)
 	defer func() {
-		err := conn.Close()
-		require.NoError(t, err)
+		errCon := conn.Close()
+		require.NoError(t, errCon)
 	}()
 
 	// Формируем ключ

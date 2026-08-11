@@ -30,9 +30,6 @@ func (i *Interceptor) WithAuth(
 		return nil, status.Error(codes.Unauthenticated, msg)
 	}
 
-	var userId string
-	var sign string
-
 	// Извлекаем meta-данные из контекста
 	md, ok := metadata.FromIncomingContext(ctx)
 
@@ -48,7 +45,7 @@ func (i *Interceptor) WithAuth(
 	// Если токен не передан
 	if len(values) == 0 {
 		// Генерируем User ID
-		userId = uuid.NewString()
+		userId := uuid.NewString()
 
 		// Подписываем новый идентификатор
 		sign, err := i.service.SignVal(userId, i.cfg.SignKey)
@@ -91,8 +88,8 @@ func (i *Interceptor) WithAuth(
 		return nil, status.Error(codes.Unauthenticated, msg)
 	}
 
-	userId = parts[0]
-	sign = parts[1]
+	userId := parts[0]
+	sign := parts[1]
 
 	i.logger.Debug("Validate sign...")
 
