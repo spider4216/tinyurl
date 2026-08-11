@@ -52,7 +52,6 @@ func (i *Interceptor) WithAuth(
 
 		// Подписываем новый идентификатор
 		sign, err := i.service.SignVal(userId, i.cfg.SignKey)
-
 		if err != nil {
 			msg := "cannot sign cookie"
 			i.logger.Error(msg, zap.Error(err))
@@ -69,7 +68,6 @@ func (i *Interceptor) WithAuth(
 		err = grpc.SetHeader(ctx, metadata.Pairs(
 			authKey, userId+"."+sign,
 		))
-
 		if err != nil {
 			msg := "cannot set sign to metadata header"
 			i.logger.Error(msg, zap.Error(err))
@@ -77,7 +75,6 @@ func (i *Interceptor) WithAuth(
 		}
 
 		return handler(ctx, req)
-
 	}
 
 	// Токен был передан

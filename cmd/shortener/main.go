@@ -101,7 +101,11 @@ func main() {
 	if app.cfg.GRPCHost != "" {
 		reflection.Register(grpcSrv)
 		myGrpcSrv := mygrpc.New(app.cfg, service, app.logger)
-		go runGRPC(app.cfg.GRPCHost, myGrpcSrv, grpcSrv, app.logger)
+		go func() {
+			if err := runGRPC(app.cfg.GRPCHost, myGrpcSrv, grpcSrv, app.logger); err != nil {
+				app.logger.Error(err)
+			}
+		}()
 	}
 
 	var wg sync.WaitGroup
@@ -165,7 +169,6 @@ func runServer(srv *http.Server, cfg *config.Config, logger *zap.SugaredLogger) 
 
 func runGRPC(host string, srv *mygrpc.ShortenerServer, s *grpc.Server, logger *zap.SugaredLogger) error {
 	listen, err := net.Listen("tcp", host)
-
 	if err != nil {
 		return err
 	}

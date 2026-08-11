@@ -32,6 +32,7 @@ func TestShortenURL(t *testing.T) {
 	require.NoError(t, err)
 
 	store, err := storage.New(storage.MapDriver, cfg, logger)
+	require.NoError(t, err)
 
 	r := repository.New(store)
 
@@ -64,11 +65,15 @@ func TestShortenURL(t *testing.T) {
 	conn, err := grpc.NewClient(listen.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		require.NoError(t, err)
+	}()
 
 	// Формируем ключ
 	userID := uuid.NewString()
 	sign, err := s.SignVal(userID, cfg.SignKey)
+	require.NoError(t, err)
 	// Готовим метаданные
 	md := metadata.New(map[string]string{"authorization": userID + "." + sign})
 	ctx = metadata.NewOutgoingContext(ctx, md)

@@ -34,7 +34,6 @@ func New(
 		service: service,
 		logger:  logger,
 	}
-
 }
 
 func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenRequest) (*pb.URLShortenResponse, error) {
@@ -65,7 +64,6 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenReque
 		s.logger.Debug("Duplicate, try getting exist reccord")
 
 		id, err = s.service.GetShortByOrigin(ctx, in.GetUrl())
-
 		if err != nil {
 			s.logger.Errorf("store error: %s", err)
 
@@ -147,7 +145,7 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (
 	}
 
 	if len(urls) <= 0 {
-		err := fmt.Errorf("No items for user %s", userId)
+		err := fmt.Errorf("no items for user %s", userId)
 		s.logger.Error(err)
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
