@@ -77,3 +77,9 @@ crt:
 
 proto-gen:
 	protoc -I=. -I=/opt/protoc/include --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=default_api_level=API_OPAQUE proto/shortener.proto
+
+grpc-send-short:
+	grpcurl -v -plaintext -d '{"url": "http://example.com"}' 127.0.0.1:7777 shortener.ShortenerService/ShortenURL
+
+grpc-send-expand:
+	grpcurl -v -H "authorization: $(token)" -plaintext 127.0.0.1:7777 shortener.ShortenerService/ListUserURLs
