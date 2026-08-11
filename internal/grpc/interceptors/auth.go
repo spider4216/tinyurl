@@ -16,6 +16,7 @@ const (
 	authKey string = "authorization"
 )
 
+// WithAuth интерцептор авторизации пользователя для gRPC запросов.
 func (i *Interceptor) WithAuth(
 	ctx context.Context,
 	req interface{},

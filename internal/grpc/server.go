@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -120,5 +121,36 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest
 }
 
 func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (*pb.UserURLsResponse, error) {
-	return nil, nil
+	ctx, cancel := context.WithTimeout(ctx, s.cfg.CtxTimeout)
+	defer cancel()
+
+	// В соответствии с прошлыми инкрементами, этот эндпоинт при
+	// невалидности токена возвращает ошибку
+	if !s.service.IsSignValidFromCtx(ctx) {
+		err := errors.New("invalid token")
+		s.logger.Error(err)
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	userId := s.service.GetUserIdFromCtx(ctx)
+
+	if userId == "" {
+		err := errors.New("cannot conver user id to string")
+		s.logger.Error(err)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	urls, err := s.service.GetUrlsByUserId(ctx, userId, s.cfg.BaseUrl)
+	if err != nil {
+		s.logger.Error(err)
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if len(urls) <= 0 {
+		err := fmt.Errorf("No items for user %s", userId)
+		s.logger.Error(err)
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	return s.mapListUrlsResp(urls), nil
 }

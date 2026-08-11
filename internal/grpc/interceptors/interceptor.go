@@ -7,6 +7,8 @@ import (
 	"github.com/spider4216/tinyurl/internal/service"
 )
 
+// Interceptor прослойка для gRPC сервера.
+// Методы структуры - это отдельные интерцепторы
 type Interceptor struct {
 	logger  *zap.SugaredLogger
 	cfg     *config.Config
