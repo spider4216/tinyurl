@@ -13,14 +13,14 @@ func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 		subnet := m.cfg.TrustSubnet
 
 		if subnet == "" {
-			m.logger.Error("subnet was not set")
+			m.logger.Warn("subnet was not set")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 
 		_, network, err := net.ParseCIDR(subnet)
 		if err != nil {
-			m.logger.Error("cannot parse CIDR")
+			m.logger.Warn("cannot parse CIDR")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -28,7 +28,7 @@ func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 		clientIP := r.Header.Get("X-Real-IP")
 
 		if clientIP == "" {
-			m.logger.Error("missed X-Real-IP header")
+			m.logger.Warn("missed X-Real-IP header")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -36,7 +36,7 @@ func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 		parsedIP := net.ParseIP(clientIP)
 
 		if !network.Contains(parsedIP) {
-			m.logger.Errorf(
+			m.logger.Warnf(
 				"client IP %s not match subnet %s with mask %s",
 				clientIP,
 				network.IP.String(),
