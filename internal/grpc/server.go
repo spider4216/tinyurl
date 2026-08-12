@@ -112,7 +112,7 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (
 	userId := s.service.GetUserIdFromCtx(ctx)
 
 	if userId == "" {
-		return nil, status.Error(codes.Internal, "cannot conver user id to string")
+		return nil, status.Error(codes.Internal, "cannot convert user id to string")
 	}
 
 	urls, err := s.service.GetUrlsByUserId(ctx, userId, s.cfg.BaseUrl)
