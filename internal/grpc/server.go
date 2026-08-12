@@ -37,12 +37,6 @@ func New(
 }
 
 func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenRequest) (*pb.URLShortenResponse, error) {
-	s.logger.Info("Catch grp on ShortenURL")
-
-	ctx, cancel := context.WithTimeout(ctx, s.cfg.CtxTimeout)
-
-	defer cancel()
-
 	id := s.service.GenerateId()
 
 	userId := s.service.GetUserIdFromCtx(ctx)
@@ -83,10 +77,6 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenReque
 }
 
 func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest) (*pb.URLExpandResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.cfg.CtxTimeout)
-
-	defer cancel()
-
 	url, err := s.service.GetUrl(ctx, in.GetId())
 	var deletedError service.DeletedUrlError
 
@@ -119,9 +109,6 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest
 }
 
 func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (*pb.UserURLsResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.cfg.CtxTimeout)
-	defer cancel()
-
 	// В соответствии с прошлыми инкрементами, этот эндпоинт при
 	// невалидности токена возвращает ошибку
 	if !s.service.IsSignValidFromCtx(ctx) {
