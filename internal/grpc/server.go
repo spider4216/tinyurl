@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -42,8 +41,7 @@ func (s *ShortenerServer) ShortenURL(ctx context.Context, in *pb.URLShortenReque
 	userId := s.service.GetUserIdFromCtx(ctx)
 
 	if userId == "" {
-		msg := "cannot convert user id to string"
-		return nil, status.Error(codes.Internal, msg)
+		return nil, status.Error(codes.Internal, "cannot convert user id to string")
 	}
 
 	err := s.service.StoreData(ctx, id, string(in.GetUrl()), userId)
@@ -81,9 +79,7 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest
 	var deletedError service.DeletedUrlError
 
 	if errors.As(err, &deletedError) {
-		errDel := errors.New("url was deleted")
-		s.logger.Error(errDel)
-		return nil, status.Error(codes.NotFound, errDel.Error())
+		return nil, status.Error(codes.NotFound, "url was deleted")
 	}
 
 	if err != nil {
@@ -92,9 +88,7 @@ func (s *ShortenerServer) ExpandURL(ctx context.Context, in *pb.URLExpandRequest
 	}
 
 	if url == "" {
-		err := errors.New("url not found")
-		s.logger.Error(err)
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, "url not found")
 	}
 
 	userId := s.service.GetUserIdFromCtx(ctx)
@@ -112,17 +106,13 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (
 	// В соответствии с прошлыми инкрементами, этот эндпоинт при
 	// невалидности токена возвращает ошибку
 	if !s.service.IsSignValidFromCtx(ctx) {
-		err := errors.New("invalid token")
-		s.logger.Error(err)
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
 	userId := s.service.GetUserIdFromCtx(ctx)
 
 	if userId == "" {
-		err := errors.New("cannot conver user id to string")
-		s.logger.Error(err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "cannot conver user id to string")
 	}
 
 	urls, err := s.service.GetUrlsByUserId(ctx, userId, s.cfg.BaseUrl)
@@ -132,9 +122,7 @@ func (s *ShortenerServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (
 	}
 
 	if len(urls) <= 0 {
-		err := fmt.Errorf("no items for user %s", userId)
-		s.logger.Error(err)
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, status.Errorf(codes.NotFound, "no items for user %s", userId)
 	}
 
 	return s.mapListUrlsResp(urls), nil
