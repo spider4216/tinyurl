@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -196,6 +197,16 @@ func (app *app) initConfig() error {
 	// Если флаг был передан, то учитываем его
 	if flags.HttpsSet {
 		cfg.Https = flags.Https
+	}
+
+	// Единожды парсим подсеть если она указана
+	if cfg.TrustSubnet != "" {
+		_, network, err := net.ParseCIDR(cfg.TrustSubnet)
+		if err != nil {
+			return err
+		}
+
+		cfg.ParsedSubnet = network
 	}
 
 	app.cfg = &cfg

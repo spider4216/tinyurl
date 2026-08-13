@@ -3,26 +3,35 @@ package middleware
 import (
 	"bytes"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/spider4216/tinyurl/internal/audit"
 	"github.com/spider4216/tinyurl/internal/config"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
 	"github.com/spider4216/tinyurl/internal/storage"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestWithSubnet(t *testing.T) {
 	zap, _ := zap.NewDevelopment()
 	logger := zap.Sugar()
+
+	sub := "192.168.1.0/24"
+	_, network, err := net.ParseCIDR(sub)
+	require.NoError(t, err)
+
 	cfg := &config.Config{
-		TrustSubnet: "192.168.1.0/24",
+		TrustSubnet:  sub,
+		ParsedSubnet: network,
 	}
+
 	store, err := storage.New(storage.MapDriver, cfg, logger)
 	require.NoError(t, err)
 	repo := repository.New(store)

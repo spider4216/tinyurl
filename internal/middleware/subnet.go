@@ -10,20 +10,15 @@ import (
 // статус ответа 403 Forbidden.
 func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		subnet := m.cfg.TrustSubnet
+		sub := m.cfg.TrustSubnet
 
-		if subnet == "" {
+		if sub == "" {
 			m.logger.Warn("subnet was not set")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 
-		_, network, err := net.ParseCIDR(subnet)
-		if err != nil {
-			m.logger.Warn("cannot parse CIDR")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
+		subnet := m.cfg.ParsedSubnet
 
 		clientIP := r.Header.Get("X-Real-IP")
 
@@ -35,12 +30,12 @@ func (m Middleware) WithSubnet(h http.Handler) http.Handler {
 
 		parsedIP := net.ParseIP(clientIP)
 
-		if !network.Contains(parsedIP) {
+		if !subnet.Contains(parsedIP) {
 			m.logger.Warnf(
 				"client IP %s not match subnet %s with mask %s",
 				clientIP,
-				network.IP.String(),
-				network.Mask.String(),
+				subnet.IP.String(),
+				subnet.Mask.String(),
 			)
 
 			w.WriteHeader(http.StatusForbidden)
