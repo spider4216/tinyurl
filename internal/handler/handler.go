@@ -393,7 +393,7 @@ func (h Handler) Urls(w http.ResponseWriter, r *http.Request) {
 
 // Ping проверка доступности источника данных.
 func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
@@ -409,7 +409,7 @@ func (h Handler) Ping(w http.ResponseWriter, r *http.Request) {
 
 // Stat внутренний эндпоинт показывающий статистику по сервису.
 func (h Handler) Stat(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), h.conf.CtxTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), h.conf.CtxTimeout)
 
 	defer cancel()
 
