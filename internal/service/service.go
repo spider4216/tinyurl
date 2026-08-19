@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"net/url"
 	"time"
@@ -174,4 +177,53 @@ func (s Service) AuditNotify(action audit.AuditAction, userID string, url string
 	}
 
 	s.audit.Notify(n)
+}
+
+// CountUsers возвращает кол-во униникальных пользователей.
+func (s Service) CountUsers(ctx context.Context) (int, error) {
+	return s.repo.CountUsers(ctx)
+}
+
+// CountUrls возвращает общее кол-во сокращенных URL.
+func (s Service) CountUrls(ctx context.Context) (int, error) {
+	return s.repo.CountUrls(ctx)
+}
+
+// Подпись строки
+func (s Service) SignVal(val string, key string) (string, error) {
+	h := hmac.New(sha256.New, []byte(key))
+
+	if _, err := h.Write([]byte(val)); err != nil {
+		return "", err
+	}
+
+	sign := h.Sum(nil)
+
+	return hex.EncodeToString(sign), nil
+}
+
+func (s Service) ValidateSign(val string, key string, sig string) error {
+	// Подписываем ключ
+	f, err := s.SignVal(val, key)
+	if err != nil {
+		return err
+	}
+
+	// Декодим и получаем байты
+	src, err := hex.DecodeString(f)
+	if err != nil {
+		return err
+	}
+
+	// Декодим подпись которую нужно проверить
+	dst, err := hex.DecodeString(sig)
+	if err != nil {
+		return err
+	}
+
+	if hmac.Equal(src, dst) {
+		return nil
+	}
+
+	return errors.New("invalid signature")
 }

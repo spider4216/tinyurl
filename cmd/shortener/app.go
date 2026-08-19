@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -198,6 +199,16 @@ func (app *app) initConfig() error {
 		cfg.Https = flags.Https
 	}
 
+	// Единожды парсим подсеть если она указана
+	if cfg.TrustSubnet != "" {
+		_, network, err := net.ParseCIDR(cfg.TrustSubnet)
+		if err != nil {
+			return err
+		}
+
+		cfg.ParsedSubnet = network
+	}
+
 	app.cfg = &cfg
 
 	return nil
@@ -212,10 +223,12 @@ func makeFlagConfig(flag Flags) *config.Config {
 		DbConfig: db.DbConfig{
 			DbDsn: flag.DbCon,
 		},
-		AuditFile: flag.AuditFile,
-		AuditURL:  flag.AuditURL,
-		Https:     flag.HttpsSet,
-		CfgFile:   flag.CfgFile,
+		AuditFile:   flag.AuditFile,
+		AuditURL:    flag.AuditURL,
+		Https:       flag.HttpsSet,
+		CfgFile:     flag.CfgFile,
+		TrustSubnet: flag.TrustSubnet,
+		GRPCHost:    flag.GRPCHost,
 	}
 }
 

@@ -54,3 +54,13 @@ func (r *Repository) Ping(ctx context.Context) error {
 func (r *Repository) GetByUserId(ctx context.Context, userId string) ([]models.UrlItem, error) {
 	return r.store.GetByUserId(ctx, userId)
 }
+
+// CountUsers возвращает кол-во униникальных пользователей.
+func (r *Repository) CountUsers(ctx context.Context) (int, error) {
+	return r.store.CountUsers(ctx)
+}
+
+// CountUrls возвращает общее кол-во сокращенных URL.
+func (r *Repository) CountUrls(ctx context.Context) (int, error) {
+	return r.store.CountUrls(ctx)
+}

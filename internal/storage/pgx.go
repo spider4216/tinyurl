@@ -144,6 +144,36 @@ func (db *PgxStorage) GetByShort(ctx context.Context, short string) (*models.Url
 	}, nil
 }
 
+// CountUsers количество пользователей в сервисе.
+func (db *PgxStorage) CountUsers(ctx context.Context) (int, error) {
+	sql := "SELECT COUNT(DISTINCT user_id) from urls where is_deleted=false"
+
+	row := db.Con.QueryRowContext(ctx, sql)
+
+	var count int
+
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// CountUrls количество сокращённых URL в сервисе.
+func (db *PgxStorage) CountUrls(ctx context.Context) (int, error) {
+	sql := "SELECT COUNT(*) from urls where is_deleted=false"
+
+	row := db.Con.QueryRowContext(ctx, sql)
+
+	var count int
+
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (db *PgxStorage) CreateUrl(ctx context.Context, data models.InsertData) error {
 	sql := "INSERT INTO urls (short, original, user_id) VALUES ($1, $2, $3)"
 

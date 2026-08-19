@@ -287,3 +287,80 @@ func (fs *FileStorage) CreateUrls(ctx context.Context, data []models.InsertData)
 
 	return nil
 }
+
+// CountUsers количество пользователей в сервисе.
+func (fs *FileStorage) CountUsers(ctx context.Context) (int, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// Вернуть курсор вначало
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return 0, err
+	}
+
+	scanner := bufio.NewScanner(fs.file)
+
+	var res []string
+
+	for scanner.Scan() {
+		var item recordFile
+
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			continue
+		}
+
+		if item.IsDeleted {
+			continue
+		}
+
+		res = append(res, item.UserId)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	fs.logger.Debug("Count users before unique", len(res))
+
+	slices.Sort(res)
+	res = slices.Compact(res)
+
+	fs.logger.Debug("Count users after unique", len(res))
+
+	return len(res), nil
+}
+
+// CountUrls количество сокращённых URL в сервисе.
+func (fs *FileStorage) CountUrls(ctx context.Context) (int, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// Вернуть курсор вначало
+	if _, err := fs.file.Seek(0, 0); err != nil {
+		return 0, err
+	}
+
+	scanner := bufio.NewScanner(fs.file)
+
+	var res []recordFile
+
+	for scanner.Scan() {
+		var item recordFile
+
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			continue
+		}
+
+		if item.IsDeleted {
+			continue
+		}
+
+		res = append(res, item)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return len(res), nil
+}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"sync"
@@ -14,12 +15,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/spider4216/tinyurl/internal/config"
+	mygrpc "github.com/spider4216/tinyurl/internal/grpc"
+	"github.com/spider4216/tinyurl/internal/grpc/interceptors"
 	"github.com/spider4216/tinyurl/internal/handler"
 	"github.com/spider4216/tinyurl/internal/middleware"
 	"github.com/spider4216/tinyurl/internal/repository"
 	"github.com/spider4216/tinyurl/internal/service"
+	pb "github.com/spider4216/tinyurl/proto"
 
 	_ "net/http/pprof"
 )
@@ -61,6 +67,12 @@ func main() {
 		r.Post("/api/shorten/batch", http.HandlerFunc(handler.GetShortenUrls))
 		r.Get("/api/user/urls", http.HandlerFunc(handler.Urls))
 		r.Delete("/api/user/urls", http.HandlerFunc(handler.DeleteUrls))
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.WithSubnet)
+
+			r.Get("/api/internal/stats", http.HandlerFunc(handler.Stat))
+		})
 	})
 
 	srv := &http.Server{
@@ -79,6 +91,21 @@ func main() {
 
 	srvProfile := &http.Server{
 		Addr: app.cfg.ProfileHost,
+	}
+
+	interceptors := interceptors.New(app.cfg, service, app.logger)
+
+	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(interceptors.WithAuth))
+
+	// Если GRPC в конфигурации указан, то запускаем сервер
+	if app.cfg.GRPCHost != "" {
+		reflection.Register(grpcSrv)
+		myGrpcSrv := mygrpc.New(app.cfg, service, app.logger)
+		go func() {
+			if err := runGRPC(app.cfg.GRPCHost, myGrpcSrv, grpcSrv, app.logger); err != nil {
+				app.logger.Error(err)
+			}
+		}()
 	}
 
 	var wg sync.WaitGroup
@@ -108,6 +135,10 @@ func main() {
 		if err := srv.Shutdown(ctxShutdown); err != nil {
 			app.logger.Warnf("Cannot shutdown main server: %s", err)
 		}
+
+		if app.cfg.GRPCHost != "" {
+			grpcSrv.GracefulStop()
+		}
 	}()
 
 	// Run profile server
@@ -134,4 +165,17 @@ func runServer(srv *http.Server, cfg *config.Config, logger *zap.SugaredLogger) 
 
 	logger.Info("Run HTTP mode")
 	return srv.ListenAndServe()
+}
+
+func runGRPC(host string, srv *mygrpc.ShortenerServer, s *grpc.Server, logger *zap.SugaredLogger) error {
+	listen, err := net.Listen("tcp", host)
+	if err != nil {
+		return err
+	}
+
+	pb.RegisterShortenerServiceServer(s, srv)
+
+	logger.Infof("Listen GRPC on port %s", host)
+
+	return s.Serve(listen)
 }
